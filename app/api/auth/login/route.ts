@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     // Find user in Supabase database
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, email, first_name, last_name, company_name, role, phone, is_active')
+      .select('id, email, first_name, last_name, company_name, role, phone, is_active, first_login')
       .eq('email', email)
       .eq('password', password)
       .single()
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       companyName: user.company_name,
       role: user.role,
       phone: user.phone,
-      isActive: user.is_active
+      isActive: user.is_active,
+      firstLogin: user.first_login
     }
 
     // In a real app, you'd create a JWT token or session

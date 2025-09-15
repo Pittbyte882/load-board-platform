@@ -8,6 +8,7 @@ export interface User {
   phone: string
   isActive: boolean
   createdAt: string
+  firstLogin?: boolean
   subscription?: {
     planId: string
     status: "active" | "trial" | "expired" | "cancelled"
