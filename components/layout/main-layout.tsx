@@ -324,28 +324,16 @@ export function MainLayout({ children }: MainLayoutProps) {
                 {navigationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild={!item.onClick} isActive={item.isActive} onClick={item.onClick}>
-                      {item.onClick ? (
-                        <button className="flex items-center gap-2 w-full">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </button>
-                      ) : (
-                        <a href={item.href} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </a>
-                      )}
-                    </SidebarMenuButton>
+  <div className="flex items-center gap-2 w-full">
+    <item.icon className="h-4 w-4" />
+    <span>{item.title}</span>
+    {item.badge && (
+      <Badge variant="secondary" className="ml-auto">
+        {item.badge}
+      </Badge>
+    )}
+  </div>
+</SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
