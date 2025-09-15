@@ -1,19 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { demoUsers } from "@/lib/demo-data"
+import { supabase } from "@/lib/supabase"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
-    // Find user in demo data
-    const user = demoUsers.find((u) => u.email === email && u.password === password)
+    // Find user in Supabase database
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, first_name, last_name, company_name, role, phone, is_active')
+      .eq('email', email)
+      .eq('password', password)
+      .single()
 
-    if (!user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Create user session data (excluding password)
-    const { password: _, ...userSession } = user
+    // Convert database field names to match your existing format
+    const userSession = {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      companyName: user.company_name,
+      role: user.role,
+      phone: user.phone,
+      isActive: user.is_active
+    }
 
     // In a real app, you'd create a JWT token or session
     const response = NextResponse.json(userSession)

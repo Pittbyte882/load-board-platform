@@ -93,28 +93,51 @@ export function SignupPage() {
   }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  e.preventDefault()
+  setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    const signupData = {
-      ...formData,
-      isTrial: isTrialSignup,
-      trialDays: trialInfo?.days || 0,
+  try {
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords don't match!")
+      setIsLoading(false)
+      return
     }
 
-    console.log("Signup data:", signupData)
-    setIsLoading(false)
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        companyName: formData.companyName,
+        role: formData.role,
+        phone: formData.phone
+      })
+    })
 
-    // In a real app, redirect to dashboard or onboarding
-    if (isTrialSignup) {
-      alert(`Welcome! Your ${trialInfo?.days}-day free trial has started. No payment required.`)
+    if (response.ok) {
+      if (isTrialSignup) {
+        alert(`Welcome! Your ${trialInfo?.days}-day free trial has started. No payment required.`)
+      } else {
+        alert("Account created successfully!")
+      }
+      // Redirect to login
+      window.location.href = '/login'
     } else {
-      alert("Account created successfully!")
+      const error = await response.json()
+      alert(`Error: ${error.error}`)
     }
+  } catch (error) {
+    alert("Failed to create account. Please try again.")
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({
