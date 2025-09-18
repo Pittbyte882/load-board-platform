@@ -1,7 +1,6 @@
 "use client"
-
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -260,7 +259,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Route Information */}
+       {/* Route Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -273,28 +272,27 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="origin">Origin *</Label>
-                <Input
+                <LocationAutocomplete
                   id="origin"
                   placeholder="e.g., Chicago, IL"
                   value={formData.origin}
-                  onChange={(e) => handleInputChange("origin", e.target.value)}
+                  onChange={(value) => handleInputChange("origin", value)}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="destination">Destination *</Label>
-                <Input
+                <LocationAutocomplete
                   id="destination"
                   placeholder="e.g., Atlanta, GA"
                   value={formData.destination}
-                  onChange={(e) => handleInputChange("destination", e.target.value)}
+                  onChange={(value) => handleInputChange("destination", value)}
                   required
                 />
               </div>
             </div>
           </CardContent>
         </Card>
-
         {/* Multiple Stops */}
         <Card>
           <CardHeader>
@@ -316,10 +314,10 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Location</Label>
-                    <Input
+                    <LocationAutocomplete
                       placeholder="e.g., Dallas, TX"
                       value={stop.location}
-                      onChange={(e) => updateStop(index, "location", e.target.value)}
+                      onChange={(value) => updateStop(index, "location", value)}
                     />
                   </div>
                   <div className="space-y-2">

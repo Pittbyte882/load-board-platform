@@ -174,9 +174,11 @@ export function BrokerDashboard() {
             Welcome back, {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
           </p>
         </div>
+        {activeTab !== "my-loads" && (
         <Button className="bg-green-600 hover:bg-green-700" onClick={handleNavigateToPostLoad}>
           Post New Load
         </Button>
+      )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
