@@ -293,10 +293,18 @@ export function BrokerDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">${load.rate}</p>
-                        <p className="text-sm text-gray-600">${load.ratePerMile}/mile</p>
-                        <p className="text-xs text-gray-500">Pickup: {new Date(load.pickupDate).toLocaleDateString()}</p>
-                      </div>
+                        <p className="font-bold text-lg">${load.rate.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">
+                                  {load.distance > 0 
+                        ? `$${(load.rate / load.distance).toFixed(2)}/mile`
+                         : 'Distance not set'
+                                  }
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {load.distance > 0 && `${load.distance} miles • `}
+                        Pickup: {new Date(load.pickupDate).toLocaleDateString()}
+                      </p>
+                    </div>
                     </div>
                   ))}
                 </div>
