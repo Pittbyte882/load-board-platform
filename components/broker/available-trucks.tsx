@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { Truck, Search, Calendar, MapPin, Phone, MessageCircle, RefreshCw, FileText } from "lucide-react"
 import type { Truck as equipmentType } from "@/lib/types"
 
@@ -176,15 +177,11 @@ export function AvailableTrucks() {
       <Card>
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by city or carrier..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+            <LocationAutocomplete
+             placeholder="Search by city (e.g., Chicago, IL)"
+             value={searchTerm}
+             onChange={(value) => setSearchTerm(value)}
+            />
             <Select value={stateFilter} onValueChange={setStateFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by state" />

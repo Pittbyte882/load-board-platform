@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -144,10 +145,10 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
     const filtered = loads.filter((load) => {
       const matchesSearch =
         !searchTerm ||
-        load.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        load.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        load.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        load.description.toLowerCase().includes(searchTerm.toLowerCase())
+        (load.origin && load.origin.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (load.destination && load.destination.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (load.id && load.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (load.description && load.description.toLowerCase().includes(searchTerm.toLowerCase()))
 
       const matchesStatus = statusFilter === "all" || load.status === statusFilter
 
@@ -371,15 +372,11 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search loads by ID, origin, destination, or description..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+              <LocationAutocomplete
+                placeholder="Search by city (e.g., Chicago, IL)"
+                value={searchTerm}
+                onChange={(value) => setSearchTerm(value)}
                 />
-              </div>
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-48">
