@@ -591,30 +591,30 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
               {/* Route Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MapPin className="h-5 w-5 mr-2 text-green-600" />
-                      Pickup Location
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xl font-semibold">{selectedLoad.origin}</p>
-                    <p className="text-gray-600">{formatDateTime(selectedLoad.pickupDate)}</p>
-                  </CardContent>
-                </Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MapPin className="h-5 w-5 mr-2 text-green-600" />
+                    Pickup Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xl font-semibold">{selectedLoad.origin}</p>
+                  <p className="text-gray-600">{formatDateTime(selectedLoad.pickupDate)}</p>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MapPin className="h-5 w-5 mr-2 text-red-600" />
-                      Delivery Location
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xl font-semibold">{selectedLoad.destination}</p>
-                    <p className="text-gray-600">{formatDateTime(selectedLoad.deliveryDate)}</p>
-                  </CardContent>
-                </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MapPin className="h-5 w-5 mr-2 text-red-600" />
+                    Delivery Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xl font-semibold">{selectedLoad.destination}</p>
+                  <p className="text-gray-600">{formatDateTime(selectedLoad.deliveryDate)}</p>
+                </CardContent>
+              </Card>
               </div>
 
               {/* Load Specifications */}

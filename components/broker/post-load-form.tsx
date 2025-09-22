@@ -85,7 +85,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
     }
 
     const key = `${origin.toLowerCase().replace(/\s+/g, "")}-${destination.toLowerCase().replace(/\s+/g, "")}`
-    return routes[key] || Math.floor(Math.random() * 500) + 200 // Default random distance if route not found
+    return routes[key] || 500 // Default to 500 miles if route not found
   }
 
   const addStop = () => {
