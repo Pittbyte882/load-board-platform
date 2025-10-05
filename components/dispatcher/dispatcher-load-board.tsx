@@ -1,5 +1,5 @@
 "use client"
-
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -301,10 +301,10 @@ export function DispatcherLoadBoard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Origin</label>
-                  <Input
+                  <LocationAutocomplete
                     placeholder="City, State or ZIP"
                     value={originFilter}
-                    onChange={(e) => setOriginFilter(e.target.value)}
+                    onChange={(value) => setOriginFilter(value)}
                   />
                 </div>
                 <div>
@@ -325,10 +325,10 @@ export function DispatcherLoadBoard() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Delivery Location</label>
-                  <Input
+                  <LocationAutocomplete
                     placeholder="City, State or ZIP"
                     value={dropoffFilter}
-                    onChange={(e) => setDropoffFilter(e.target.value)}
+                    onChange={(value) => setDropoffFilter(value)}
                   />
                 </div>
                 <div>

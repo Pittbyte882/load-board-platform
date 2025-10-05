@@ -1,5 +1,5 @@
 "use client"
-
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -231,7 +231,7 @@ filtered.sort((a, b) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Origin</label>
-                  <Input placeholder="City, State or ZIP" value={origin} onChange={(e) => setOrigin(e.target.value)} />
+                  <LocationAutocomplete placeholder="City, State or ZIP"  value={origin}  onChange={(value) => setOrigin(value)}/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Deadhead Radius</label>
@@ -250,11 +250,8 @@ filtered.sort((a, b) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Delivery Location</label>
-                  <Input
-                    placeholder="City, State or ZIP"
-                    value={deliveryLocation}
-                    onChange={(e) => setDeliveryLocation(e.target.value)}
-                  />
+                  <LocationAutocomplete   placeholder="City, State or ZIP"  value={deliveryLocation}  onChange={(value) => setDeliveryLocation(value)}/>
+
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Delivery Radius</label>
