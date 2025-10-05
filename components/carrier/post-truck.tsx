@@ -1,5 +1,5 @@
 "use client"
-
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -137,14 +137,12 @@ export function PostTruck() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search by city, state, or truck type..."
+            <div className="flex-1 flex gap-2">
+              <div className="flex-1">
+                <LocationAutocomplete
+                  placeholder="Filter by city, state or truck type..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  onChange={(value) => setSearchTerm(value)}
                 />
               </div>
             </div>
