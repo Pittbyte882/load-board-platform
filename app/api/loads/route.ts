@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllLoads, getLoadsByBrokerId, addLoad } from '@/lib/loads-store'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const brokerId = searchParams.get('brokerId')
     
-    console.log('GET /api/loads - brokerId:', brokerId)
+    // In production, fetch loads from database based on brokerId
+    // For now, return empty array for new users
     
-    let loads
-    if (brokerId) {
-      loads = getLoadsByBrokerId(brokerId)
-      console.log(`Found ${loads.length} loads for broker ${brokerId}`)
-    } else {
-      loads = getAllLoads()
-      console.log(`Found ${loads.length} total loads`)
-    }
-    
-    return NextResponse.json(loads)
+    return NextResponse.json([])
   } catch (error) {
     console.error('Error fetching loads:', error)
     return NextResponse.json(
@@ -30,32 +21,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log('POST /api/loads - received data:', body)
     
     // Validate required fields
     const requiredFields = ['brokerId', 'brokerName', 'brokerCompany', 'brokerMcNumber', 'origin', 'destination', 'pickupDate', 'deliveryDate', 'weight', 'rate', 'distance', 'equipment', 'loadType', 'description']
     const missingFields = requiredFields.filter(field => !body[field])
     
     if (missingFields.length > 0) {
-      console.error('Missing required fields:', missingFields)
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       )
     }
 
-    // Ensure numeric fields are numbers
-    const loadData = {
+    // In production, save to database
+    // For now, return the load data with a generated ID
+    
+    const newLoad = {
+      id: `LOAD-${Date.now()}`,
       ...body,
       weight: typeof body.weight === 'string' ? parseInt(body.weight) : body.weight,
       rate: typeof body.rate === 'string' ? parseInt(body.rate) : body.rate,
       distance: typeof body.distance === 'string' ? parseInt(body.distance) : body.distance,
+      createdAt: new Date().toISOString(),
     }
-
-    console.log('Processed load data:', loadData)
-    
-    const newLoad = addLoad(loadData)
-    console.log('Load created successfully:', newLoad.id)
     
     return NextResponse.json(newLoad, { status: 201 })
   } catch (error) {
