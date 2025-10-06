@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,66 +16,66 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Trash2, Phone, Mail, MapPin, Truck, Star } from "lucide-react"
-import type { Carrier } from "@/lib/types"
+import { Plus, Edit, Trash2, Phone, Mail, MapPin, Truck, Star, Loader2 } from "lucide-react"
 
-const mockCarriers: Carrier[] = [
-  {
-    id: "1",
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    phone: "(555) 123-4567",
-    company: "Johnson Transport",
-    equipmentType: "Box Truck",
-    location: "Atlanta, GA",
-    mcNumber: "MC-123456",
-    dotNumber: "DOT-123456",
-    rating: 4.8,
-    completedLoads: 156,
-    status: "active",
-    joinedDate: "2023-01-15",
-    lastActive: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: "2",
-    name: "Sarah Davis",
-    email: "sarah@example.com",
-    phone: "(555) 987-6543",
-    company: "Davis Delivery",
-    equipmentType: "Cargo Van",
-    location: "Miami, FL",
-    mcNumber: "MC-987654",
-    dotNumber: "DOT-987654",
-    rating: 4.9,
-    completedLoads: 203,
-    status: "active",
-    joinedDate: "2022-11-08",
-    lastActive: "2024-01-15T09:15:00Z",
-  },
-  {
-    id: "3",
-    name: "Carlos Rodriguez",
-    email: "carlos@example.com",
-    phone: "(555) 456-7890",
-    company: "Rodriguez Logistics",
-    equipmentType: "Box Truck",
-    location: "Houston, TX",
-    mcNumber: "MC-456789",
-    dotNumber: "DOT-456789",
-    rating: 4.6,
-    completedLoads: 89,
-    status: "inactive",
-    joinedDate: "2023-06-22",
-    lastActive: "2024-01-10T14:20:00Z",
-  },
-]
+interface Carrier {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string
+  equipmentType: string
+  location: string
+  mcNumber: string
+  dotNumber: string
+  rating: number
+  completedLoads: number
+  status: "active" | "inactive"
+  joinedDate: string
+  lastActive: string
+}
+
+const API_BASE_URL = '/api/carrier/manage-carriers'
 
 export function ManageCarriers() {
-  const [carriers, setCarriers] = useState<Carrier[]>(mockCarriers)
+  const [carriers, setCarriers] = useState<Carrier[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch carriers on component mount
+  useEffect(() => {
+    fetchCarriers()
+  }, [])
+
+  const fetchCarriers = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await fetch(`${API_BASE_URL}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch carriers')
+      }
+      
+      const data = await response.json()
+      setCarriers(data.carriers || data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load carriers')
+      console.error('Error fetching carriers:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredCarriers = carriers.filter(
     (carrier) =>
@@ -86,40 +84,87 @@ export function ManageCarriers() {
       carrier.location.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddCarrier = (carrierData: Partial<Carrier>) => {
-    const newCarrier: Carrier = {
-      id: Date.now().toString(),
-      name: carrierData.name || "",
-      email: carrierData.email || "",
-      phone: carrierData.phone || "",
-      company: carrierData.company || "",
-      equipmentType: carrierData.equipmentType || "Box Truck",
-      location: carrierData.location || "",
-      mcNumber: carrierData.mcNumber || "",
-      dotNumber: carrierData.dotNumber || "",
-      rating: 0,
-      completedLoads: 0,
-      status: "active",
-      joinedDate: new Date().toISOString().split("T")[0],
-      lastActive: new Date().toISOString(),
+  const handleAddCarrier = async (carrierData: Partial<Carrier>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...carrierData,
+          rating: 0,
+          completedLoads: 0,
+          status: 'active',
+          joinedDate: new Date().toISOString().split('T')[0],
+          lastActive: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to add carrier')
+      }
+
+      const newCarrier = await response.json()
+      setCarriers([...carriers, newCarrier])
+      setIsAddDialogOpen(false)
+    } catch (err) {
+      console.error('Error adding carrier:', err)
+      alert('Failed to add carrier. Please try again.')
     }
-    setCarriers([...carriers, newCarrier])
-    setIsAddDialogOpen(false)
   }
 
-  const handleEditCarrier = (carrierData: Partial<Carrier>) => {
+  const handleEditCarrier = async (carrierData: Partial<Carrier>) => {
     if (!selectedCarrier) return
 
-    const updatedCarriers = carriers.map((carrier) =>
-      carrier.id === selectedCarrier.id ? { ...carrier, ...carrierData } : carrier,
-    )
-    setCarriers(updatedCarriers)
-    setIsEditDialogOpen(false)
-    setSelectedCarrier(null)
+    try {
+      const response = await fetch(`${API_BASE_URL}/${selectedCarrier.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(carrierData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update carrier')
+      }
+
+      const updatedCarrier = await response.json()
+      const updatedCarriers = carriers.map((carrier) =>
+        carrier.id === selectedCarrier.id ? updatedCarrier : carrier,
+      )
+      setCarriers(updatedCarriers)
+      setIsEditDialogOpen(false)
+      setSelectedCarrier(null)
+    } catch (err) {
+      console.error('Error updating carrier:', err)
+      alert('Failed to update carrier. Please try again.')
+    }
   }
 
-  const handleDeleteCarrier = (carrierId: string) => {
-    setCarriers(carriers.filter((carrier) => carrier.id !== carrierId))
+  const handleDeleteCarrier = async (carrierId: string) => {
+    if (!confirm('Are you sure you want to delete this carrier?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/${carrierId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete carrier')
+      }
+
+      setCarriers(carriers.filter((carrier) => carrier.id !== carrierId))
+    } catch (err) {
+      console.error('Error deleting carrier:', err)
+      alert('Failed to delete carrier. Please try again.')
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -131,6 +176,36 @@ export function ManageCarriers() {
       default:
         return "bg-gray-100 text-gray-800"
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading carriers...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-red-600 text-xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Carriers</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={fetchCarriers} className="bg-green-600 hover:bg-green-700">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -166,6 +241,10 @@ export function ManageCarriers() {
             className="max-w-md"
           />
         </div>
+        <Button variant="outline" onClick={fetchCarriers}>
+          <Loader2 className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       <div className="grid gap-6">
@@ -200,7 +279,7 @@ export function ManageCarriers() {
                     <div className="flex items-center space-x-4 text-sm">
                       <div className="flex items-center">
                         <Truck className="h-4 w-4 mr-1 text-gray-500" />
-                        
+                        <span>{carrier.equipmentType}</span>
                       </div>
                       <div className="flex items-center">
                         <Star className="h-4 w-4 mr-1 text-yellow-500 fill-current" />
@@ -281,19 +360,25 @@ function CarrierForm({
     email: initialData?.email || "",
     phone: initialData?.phone || "",
     company: initialData?.company || "",
-    vehicleType: initialData?.equipmentType || "Box Truck",
+    equipmentType: initialData?.equipmentType || "Box Truck",
     location: initialData?.location || "",
     mcNumber: initialData?.mcNumber || "",
     dotNumber: initialData?.dotNumber || "",
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    setIsSubmitting(true)
+    try {
+      await onSubmit(formData)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="name">Full Name</Label>
@@ -302,6 +387,7 @@ function CarrierForm({
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
         <div>
@@ -311,6 +397,7 @@ function CarrierForm({
             value={formData.company}
             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
       </div>
@@ -324,6 +411,7 @@ function CarrierForm({
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
         <div>
@@ -333,6 +421,7 @@ function CarrierForm({
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
       </div>
@@ -346,6 +435,7 @@ function CarrierForm({
             value={formData.mcNumber}
             onChange={(e) => setFormData({ ...formData, mcNumber: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
         <div>
@@ -356,6 +446,7 @@ function CarrierForm({
             value={formData.dotNumber}
             onChange={(e) => setFormData({ ...formData, dotNumber: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
       </div>
@@ -369,16 +460,15 @@ function CarrierForm({
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="vehicleType">Vehicle Type</Label>
+          <Label htmlFor="equipmentType">Equipment Type</Label>
           <Select
-            value={formData.vehicleType}
-            onValueChange={(value) => setFormData({ ...formData, vehicleType: value })}
+            value={formData.equipmentType}
+            onValueChange={(value) => setFormData({ ...formData, equipmentType: value })}
+            disabled={isSubmitting}
           >
             <SelectTrigger>
               <SelectValue />
@@ -390,12 +480,24 @@ function CarrierForm({
             </SelectContent>
           </Select>
         </div>
-        </div>
+      </div>
+
       <div className="flex justify-end space-x-2 pt-4">
-        <Button type="submit" className="bg-green-600 hover:bg-green-700">
-          {initialData ? "Update Carrier" : "Add Carrier"}
+        <Button 
+          onClick={handleSubmit} 
+          className="bg-green-600 hover:bg-green-700"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {initialData ? "Updating..." : "Adding..."}
+            </>
+          ) : (
+            <>{initialData ? "Update Carrier" : "Add Carrier"}</>
+          )}
         </Button>
       </div>
-    </form>
+    </div>
   )
 }
