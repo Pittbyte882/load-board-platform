@@ -27,32 +27,46 @@ export function PostTruck() {
   }, [trucks, searchTerm, statusFilter])
 
   const fetchMyTrucks = async () => {
-    setIsLoading(true)
-    try {
-      console.log('Fetching my trucks...')
-      const response = await fetch('/api/trucks/my-trucks', {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Fetched trucks:', data)
-        setTrucks(data)
-      } else {
-        console.error('Failed to fetch trucks:', response.status, response.statusText)
-        const errorData = await response.json()
-        console.error('Error details:', errorData)
+  setIsLoading(true)
+  try {
+    console.log('Fetching my trucks...')
+    const response = await fetch('/api/trucks/my-trucks', {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
-    } catch (error) {
-      console.error('Error fetching trucks:', error)
-    } finally {
-      setIsLoading(false)
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('Fetched trucks:', data)
+      // Map snake_case to camelCase for the component
+      const mappedTrucks = data.map((truck: any) => ({
+        id: truck.id,
+        carrierId: truck.carrier_id,
+        carrierName: truck.carrier_name,
+        carrierCompany: truck.carrier_company,
+        equipmentType: truck.equipment_type,
+        availableDate: truck.available_date,
+        city: truck.city,
+        state: truck.state,
+        capacity: truck.capacity,
+        dotNumber: truck.dot_number,
+        mcNumber: truck.mc_number,
+        specialEquipment: truck.special_equipment,
+        description: truck.description,
+        status: truck.status,
+        postedDate: truck.posted_date,
+      }))
+      setTrucks(mappedTrucks)
     }
+  } catch (error) {
+    console.error('Error fetching trucks:', error)
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const filterTrucks = () => {
     let filtered = trucks

@@ -1,31 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Validate required fields
-    const requiredFields = ['carrierId', 'carrierName', 'carrierCompany', 'equipmentType', 'availableDate', 'city', 'state']
-    const missingFields = requiredFields.filter(field => !body[field])
-    
-    if (missingFields.length > 0) {
-      return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
-        { status: 400 }
-      )
-    }
-
-    // In production, save to database
-    // For now, return the truck data with generated ID and timestamp
-    
-    const newTruck = {
+    const truckData = {
       id: `TRUCK-${Date.now()}`,
-      ...body,
-      postedDate: new Date().toISOString(),
-      status: body.status || 'available'
+      carrier_id: body.carrierId,
+      carrier_name: body.carrierName,
+      carrier_company: body.carrierCompany,
+      equipment_type: body.equipmentType,
+      available_date: body.availableDate,
+      city: body.city,
+      state: body.state,
+      capacity: body.capacity ? parseInt(body.capacity) : null,
+      dot_number: body.dotNumber || null,
+      mc_number: body.mcNumber || null,
+      special_equipment: body.specialEquipment || null,
+      description: body.description || null,
+      status: 'available',
+      posted_date: new Date().toISOString(),
     }
     
-    return NextResponse.json(newTruck, { status: 201 })
+    const { data, error } = await supabase
+      .from('trucks')
+      .insert([truckData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    return NextResponse.json(data, { status: 201 })
   } catch (error) {
     console.error('Error creating truck:', error)
     return NextResponse.json(

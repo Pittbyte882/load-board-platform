@@ -52,30 +52,48 @@ export function ManageCarriers() {
   }, [])
 
   const fetchCarriers = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const response = await fetch(`${API_BASE_URL}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch carriers')
-      }
-      
-      const data = await response.json()
-      setCarriers(data.carriers || data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load carriers')
-      console.error('Error fetching carriers:', err)
-    } finally {
-      setIsLoading(false)
+  try {
+    setIsLoading(true)
+    setError(null)
+    const response = await fetch('/api/carrier/manage-carriers', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch carriers')
     }
+    
+    const data = await response.json()
+    // Map snake_case to camelCase
+    const mappedCarriers = (data.carriers || []).map((carrier: any) => ({
+      id: carrier.id,
+      name: carrier.name,
+      email: carrier.email,
+      phone: carrier.phone,
+      company: carrier.company,
+      equipmentType: carrier.equipment_type,
+      location: carrier.location,
+      mcNumber: carrier.mc_number,
+      dotNumber: carrier.dot_number,
+      rating: carrier.rating,
+      completedLoads: carrier.completed_loads,
+      status: carrier.status,
+      joinedDate: carrier.joined_date,
+      lastActive: carrier.last_active,
+    }))
+    setCarriers(mappedCarriers)
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to load carriers')
+    console.error('Error fetching carriers:', err)
+    setCarriers([])
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const filteredCarriers = carriers.filter(
     (carrier) =>
