@@ -1,6 +1,6 @@
 "use client"
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,160 +8,105 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { MapPin, Package, Truck, Clock, Search } from "lucide-react"
-import type { Load, Carrier } from "@/lib/types"
+import { MapPin, Package, Truck, Clock, Search, RefreshCw } from "lucide-react"
 
-const mockLoads: Load[] = [
-  {
-    id: "1",
-    brokerId: "broker-1",
-    brokerName: "John Smith",
-    brokerCompany: "ABC Logistics",
-    brokerMC: "MC-123456",
-    title: "Furniture Delivery",
-    description: "Furniture and household goods delivery",
-    pickupLocation: "Atlanta, GA",
-    deliveryLocation: "Miami, FL",
-    pickupDate: "2024-01-20T08:00:00Z",
-    deliveryDate: "2024-01-22T17:00:00Z",
-    postedDate: "2024-01-15T10:00:00Z",
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-    rate: 1200,
-    distance: 650,
-    weight: 2500,
-    loadType: "FTL",
-    equipmentType: "Box Truck",
-    status: "available",
-  },
-  {
-    id: "2",
-    brokerId: "broker-2",
-    brokerName: "Sarah Johnson",
-    brokerCompany: "Tech Distributors",
-    brokerMC: "MC-789012",
-    title: "Electronics Delivery",
-    description: "Computer equipment delivery",
-    pickupLocation: "Houston, TX",
-    deliveryLocation: "Dallas, TX",
-    pickupDate: "2024-01-18T09:00:00Z",
-    deliveryDate: "2024-01-18T16:00:00Z",
-    postedDate: "2024-01-15T14:30:00Z",
-    createdAt: "2024-01-15T14:30:00Z",
-    updatedAt: "2024-01-15T14:30:00Z",
-    rate: 450,
-    distance: 240,
-    weight: 1800,
-    loadType: "FTL",
-    equipmentType: "Cargo Van",
-    status: "available",
-  },
-  {
-    id: "3",
-    brokerId: "broker-3",
-    brokerName: "Mike Davis",
-    brokerCompany: "Retail Solutions",
-    brokerMC: "MC-345678",
-    title: "Retail Merchandise",
-    description: "Store merchandise and displays",
-    pickupLocation: "Phoenix, AZ",
-    deliveryLocation: "Las Vegas, NV",
-    pickupDate: "2024-01-25T10:00:00Z",
-    deliveryDate: "2024-01-26T15:00:00Z",
-    postedDate: "2024-01-14T09:15:00Z",
-    createdAt: "2024-01-14T09:15:00Z",
-    updatedAt: "2024-01-14T09:15:00Z",
-    rate: 800,
-    distance: 300,
-    weight: 3200,
-    loadType: "LTL",
-    equipmentType: "Box Truck",
-    status: "available",
-  },
-]
-
-const mockCarriers: Carrier[] = [
-  {
-    id: "1",
-    name: "Mike Johnson",
-    company: "Johnson Transport",
-    equipmentType: "Box Truck",
-    location: "Atlanta, GA",
-    rating: 4.8,
-    completedLoads: 156,
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Sarah Davis",
-    company: "Davis Delivery",
-    equipmentType: "Cargo Van",
-
-    location: "Miami, FL",
-    rating: 4.9,
-    completedLoads: 203,
-    status: "active",
-  },
-]
+interface Load {
+  id: string
+  broker_id: string
+  broker_name: string
+  broker_company: string
+  broker_mc: string
+  origin: string
+  destination: string
+  pickup_location: string
+  delivery_location: string
+  pickup_date: string
+  delivery_date: string
+  weight: number
+  rate: number
+  distance: number
+  equipment: string
+  equipment_type: string
+  load_type: string
+  description: string
+  status: string
+  expedited?: boolean
+  hazmat?: boolean
+  team_driver?: boolean
+  created_at: string
+  posted_date: string
+}
 
 export function DispatcherLoadBoard() {
-  const [loads, setLoads] = useState<Load[]>(mockLoads)
-  const [carriers] = useState<Carrier[]>(mockCarriers)
+  const [loads, setLoads] = useState<Load[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [originFilter, setOriginFilter] = useState("")
-  const [pickupRadius, setPickupRadius] = useState("25") // Updated default value
+  const [pickupRadius, setPickupRadius] = useState("50")
   const [dropoffFilter, setDropoffFilter] = useState("")
-  const [dropoffRadius, setDropoffRadius] = useState("25") // Updated default value
+  const [dropoffRadius, setDropoffRadius] = useState("50")
   const [loadTypeFilter, setLoadTypeFilter] = useState("")
   const [minWeight, setMinWeight] = useState("")
   const [maxWeight, setMaxWeight] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [equipmentFilter, setEquipmentFilter] = useState("") // Declared the variable
+  const [equipmentFilter, setEquipmentFilter] = useState("")
 
   const [selectedLoad, setSelectedLoad] = useState<Load | null>(null)
-  const [selectedCarrier, setSelectedCarrier] = useState<string>("")
-  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false)
-
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false)
   const [isNegotiateDialogOpen, setIsNegotiateDialogOpen] = useState(false)
   const [counterOffer, setCounterOffer] = useState("")
-  const [selectedLoadForDetails, setSelectedLoadForDetails] = useState<Load | null>(null)
-  const [selectedLoadForPhone, setSelectedLoadForPhone] = useState<Load | null>(null)
-  const [selectedLoadForMessage, setSelectedLoadForMessage] = useState<Load | null>(null)
-  const [selectedLoadForNegotiate, setSelectedLoadForNegotiate] = useState<Load | null>(null)
+
+  useEffect(() => {
+    fetchLoads()
+  }, [])
+
+  const fetchLoads = async () => {
+    setIsLoading(true)
+    try {
+      console.log("Dispatcher: Fetching available loads...")
+      const response = await fetch("/api/loads/available", {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Dispatcher: Fetched loads:", data.length)
+        setLoads(data)
+      } else {
+        console.error("Dispatcher: Failed to fetch loads:", response.status)
+      }
+    } catch (error) {
+      console.error("Dispatcher: Error fetching loads:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredLoads = loads.filter((load) => {
-    // Origin filter
-    const matchesOrigin = !originFilter || load.pickupLocation.toLowerCase().includes(originFilter.toLowerCase())
-
-    // Drop off filter
-    const matchesDropoff = !dropoffFilter || load.deliveryLocation.toLowerCase().includes(dropoffFilter.toLowerCase())
-
-    // Equipment filter
-    const matchesEquipment = !equipmentFilter || load.equipmentType === equipmentFilter
-
-    // Load type filter
-    const matchesLoadType = !loadTypeFilter || load.loadType === loadTypeFilter
-
-    // Weight filter
+    const matchesOrigin = !originFilter || load.pickup_location.toLowerCase().includes(originFilter.toLowerCase())
+    const matchesDropoff = !dropoffFilter || load.delivery_location.toLowerCase().includes(dropoffFilter.toLowerCase())
+    const matchesEquipment = !equipmentFilter || equipmentFilter === "all" || load.equipment_type === equipmentFilter
+    const matchesLoadType = !loadTypeFilter || loadTypeFilter === "all" || load.load_type === loadTypeFilter
+    
     const loadWeight = Number(load.weight)
     const matchesMinWeight = !minWeight || loadWeight >= Number.parseInt(minWeight)
     const matchesMaxWeight = !maxWeight || loadWeight <= Number.parseInt(maxWeight)
-
-    // Date filter
-    const loadDate = new Date(load.pickupDate)
+    
+    const loadDate = new Date(load.pickup_date)
     const matchesStartDate = !startDate || loadDate >= new Date(startDate)
     const matchesEndDate = !endDate || loadDate <= new Date(endDate)
-
-    // General search
+    
     const matchesSearch =
       !searchTerm ||
-      load.pickupLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      load.deliveryLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      load.loadType.toLowerCase().includes(searchTerm.toLowerCase())
+      load.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      load.delivery_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      load.load_type.toLowerCase().includes(searchTerm.toLowerCase())
 
     return (
       matchesOrigin &&
@@ -177,59 +122,41 @@ export function DispatcherLoadBoard() {
     )
   })
 
-  const handleBookLoad = () => {
-    if (!selectedLoad || !selectedCarrier) return
-
-    const carrier = carriers.find((c) => c.id === selectedCarrier)
-    if (!carrier) return
-
-    // Update load status
-    setLoads(
-      loads.map((load) =>
-        load.id === selectedLoad.id ? { ...load, status: "booked", assignedCarrier: carrier.name } : load,
-      ),
-    )
-
-    setIsBookingDialogOpen(false)
-    setSelectedLoad(null)
-    setSelectedCarrier("")
-  }
-
   const handleViewDetails = (load: Load) => {
-    setSelectedLoadForDetails(load)
+    setSelectedLoad(load)
     setIsDetailsDialogOpen(true)
   }
 
   const handlePhone = (load: Load) => {
-    setSelectedLoadForPhone(load)
+    setSelectedLoad(load)
     setIsPhoneDialogOpen(true)
   }
 
   const handleMessage = (load: Load) => {
-    setSelectedLoadForMessage(load)
+    setSelectedLoad(load)
     setIsMessageDialogOpen(true)
   }
 
   const handleNegotiate = (load: Load) => {
-    setSelectedLoadForNegotiate(load)
+    setSelectedLoad(load)
     setCounterOffer(load.rate.toString())
     setIsNegotiateDialogOpen(true)
   }
 
   const handleSubmitNegotiation = () => {
-    if (!selectedLoadForNegotiate || !counterOffer) return
+    if (!selectedLoad || !counterOffer) return
 
     alert(
-      `Negotiation sent to ${selectedLoadForNegotiate.brokerCompany}!\nOriginal Rate: $${selectedLoadForNegotiate.rate.toLocaleString()}\nYour Counter Offer: $${Number(counterOffer).toLocaleString()}`,
+      `Negotiation sent to ${selectedLoad.broker_company}!\nOriginal Rate: $${selectedLoad.rate.toLocaleString()}\nYour Counter Offer: $${Number(counterOffer).toLocaleString()}`,
     )
 
     setIsNegotiateDialogOpen(false)
-    setSelectedLoadForNegotiate(null)
+    setSelectedLoad(null)
     setCounterOffer("")
   }
 
   const getRatePerMile = (rate: number, distance: number) => {
-    return (rate / distance).toFixed(2)
+    return distance > 0 ? (rate / distance).toFixed(2) : '0.00'
   }
 
   const getStatusColor = (status: string) => {
@@ -248,32 +175,16 @@ export function DispatcherLoadBoard() {
   }
 
   const getCounterOfferRatePerMile = () => {
-  if (!selectedLoadForNegotiate || !counterOffer || !selectedLoadForNegotiate.distance) return "0.00"
-  return (Number(counterOffer) / selectedLoadForNegotiate.distance).toFixed(2)
-}
-
-  const handleSearch = () => {
-    // The filtering happens automatically through the filteredLoads computed value
-    console.log("Searching with filters:", {
-      origin: originFilter,
-      pickupRadius,
-      dropoff: dropoffFilter,
-      dropoffRadius,
-      equipment: equipmentFilter,
-      loadType: loadTypeFilter,
-      minWeight,
-      maxWeight,
-      startDate,
-      endDate,
-    })
+    if (!selectedLoad || !counterOffer || !selectedLoad.distance) return "0.00"
+    return (Number(counterOffer) / selectedLoad.distance).toFixed(2)
   }
 
   const clearFilters = () => {
     setOriginFilter("")
-    setPickupRadius("")
+    setPickupRadius("50")
     setDropoffFilter("")
-    setDropoffRadius("")
-    setEquipmentFilter("") // Used the declared variable
+    setDropoffRadius("50")
+    setEquipmentFilter("")
     setLoadTypeFilter("")
     setMinWeight("")
     setMaxWeight("")
@@ -282,13 +193,28 @@ export function DispatcherLoadBoard() {
     setSearchTerm("")
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading available loads...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Find Loads</h1>
-          <p className="text-gray-600">Search and book loads for your carriers</p>
+          <p className="text-gray-600">{filteredLoads.length} available loads</p>
         </div>
+        <Button variant="outline" onClick={fetchLoads}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       {/* Enhanced Search Form */}
@@ -365,7 +291,6 @@ export function DispatcherLoadBoard() {
                       <SelectItem value="16ft Box Truck">16ft Box Truck</SelectItem>
                       <SelectItem value="24ft Box Truck">24ft Box Truck</SelectItem>
                       <SelectItem value="26ft Box Truck">26ft Box Truck</SelectItem>
-                      <SelectItem value="Box Truck (Reefer)">Box Truck (Reefer)</SelectItem>
                       <SelectItem value="Box Truck Team">Box Truck Team</SelectItem>
                       <SelectItem value="Cargo Van">Cargo Van</SelectItem>
                       <SelectItem value="Sprinter Van">Sprinter Van</SelectItem>
@@ -420,7 +345,7 @@ export function DispatcherLoadBoard() {
             {/* Action Buttons */}
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="flex space-x-2">
-                <Button onClick={handleSearch} className="bg-green-600 hover:bg-green-700">
+                <Button onClick={() => {}} className="bg-green-600 hover:bg-green-700">
                   <Search className="h-4 w-4 mr-2" />
                   Search Loads
                 </Button>
@@ -428,18 +353,6 @@ export function DispatcherLoadBoard() {
                   Clear Filters
                 </Button>
               </div>
-              <Select value="postedDate" onValueChange={() => {}}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="postedDate">Newest First</SelectItem>
-                  <SelectItem value="rate">Highest Rate</SelectItem>
-                  <SelectItem value="ratePerMile">Best Rate/Mile</SelectItem>
-                  <SelectItem value="pickupDate">Pickup Date</SelectItem>
-                  <SelectItem value="distance">Shortest Distance</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </CardContent>
@@ -456,19 +369,19 @@ export function DispatcherLoadBoard() {
                     <Package className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{load.loadType}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{load.load_type}</h3>
                     <p className="text-sm text-gray-600">{load.description}</p>
                     <div className="flex items-center mt-2 text-sm text-gray-500">
-                      <span>Posted by {load.brokerCompany}</span>
+                      <span>Posted by {load.broker_company}</span>
                       <span className="mx-2">•</span>
                       <Clock className="h-4 w-4 mr-1" />
-                      <span>{new Date(load.postedDate).toLocaleDateString()}</span>
+                      <span>{new Date(load.posted_date).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-green-600">${load.rate.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">${load.distance ? getRatePerMile(load.rate, load.distance) : '0.00'}/mile</div>
+                  <div className="text-sm text-gray-600">${getRatePerMile(load.rate, load.distance)}/mile</div>
                   <Badge className={getStatusColor(load.status)}>{load.status}</Badge>
                 </div>
               </div>
@@ -478,23 +391,23 @@ export function DispatcherLoadBoard() {
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <div>
                     <div className="text-sm font-medium">Pickup</div>
-                    <div className="text-sm text-gray-600">{load.pickupLocation}</div>
-                    <div className="text-xs text-gray-500">{load.pickupDate}</div>
+                    <div className="text-sm text-gray-600">{load.pickup_location}</div>
+                    <div className="text-xs text-gray-500">{new Date(load.pickup_date).toLocaleDateString()}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <div>
                     <div className="text-sm font-medium">Delivery</div>
-                    <div className="text-sm text-gray-600">{load.deliveryLocation}</div>
-                    <div className="text-xs text-gray-500">{load.deliveryDate}</div>
+                    <div className="text-sm text-gray-600">{load.delivery_location}</div>
+                    <div className="text-xs text-gray-500">{new Date(load.delivery_date).toLocaleDateString()}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Truck className="h-4 w-4 text-gray-500" />
                   <div>
-                    <div className="text-sm font-medium">{load.equipmentType}</div>
-                    <div className="text-sm text-gray-600">{load.weight}</div>
+                    <div className="text-sm font-medium">{load.equipment_type}</div>
+                    <div className="text-sm text-gray-600">{load.weight.toLocaleString()} lbs</div>
                   </div>
                 </div>
               </div>
@@ -502,6 +415,8 @@ export function DispatcherLoadBoard() {
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <span>{load.distance} miles</span>
+                  {load.expedited && <Badge variant="destructive">Expedited</Badge>}
+                  {load.hazmat && <Badge variant="destructive">Hazmat</Badge>}
                 </div>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleViewDetails(load)}>
@@ -529,17 +444,9 @@ export function DispatcherLoadBoard() {
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No loads found</h3>
             <p className="text-gray-600">
-              {searchTerm ||
-              originFilter ||
-              dropoffFilter ||
-              equipmentFilter ||
-              loadTypeFilter ||
-              minWeight ||
-              maxWeight ||
-              startDate ||
-              endDate
-                ? "No loads match your search criteria. Try adjusting your filters."
-                : "No available loads at the moment. Check back later for new opportunities."}
+              {loads.length === 0
+                ? "No available loads at the moment. Check back later for new opportunities."
+                : "No loads match your search criteria. Try adjusting your filters."}
             </p>
           </CardContent>
         </Card>
@@ -552,41 +459,33 @@ export function DispatcherLoadBoard() {
             <DialogTitle>Load Details</DialogTitle>
             <DialogDescription>Complete information for this load</DialogDescription>
           </DialogHeader>
-          {selectedLoadForDetails && (
+          {selectedLoad && (
             <div className="space-y-6">
-              {/* Broker Information */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Broker Information</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="font-medium">Company:</span> {selectedLoadForDetails.brokerCompany}
+                    <span className="font-medium">Company:</span> {selectedLoad.broker_company}
                   </div>
                   <div>
-                    <span className="font-medium">Contact:</span> John Smith
+                    <span className="font-medium">Contact:</span> {selectedLoad.broker_name}
                   </div>
                   <div>
-                    <span className="font-medium">Phone:</span> (555) 123-4567
-                  </div>
-                  <div>
-                    <span className="font-medium">MC Number:</span> MC-123456
+                    <span className="font-medium">MC Number:</span> {selectedLoad.broker_mc}
                   </div>
                 </div>
               </div>
 
-              {/* Load Information */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold mb-3">Pickup Details</h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="font-medium">Location:</span> {selectedLoadForDetails.pickupLocation}
+                      <span className="font-medium">Location:</span> {selectedLoad.pickup_location}
                     </div>
                     <div>
                       <span className="font-medium">Date:</span>{" "}
-                      {new Date(selectedLoadForDetails.pickupDate).toLocaleDateString()}
-                    </div>
-                    <div>
-                      <span className="font-medium">Time:</span> 8:00 AM - 5:00 PM
+                      {new Date(selectedLoad.pickup_date).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -594,54 +493,56 @@ export function DispatcherLoadBoard() {
                   <h4 className="font-semibold mb-3">Delivery Details</h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="font-medium">Location:</span> {selectedLoadForDetails.deliveryLocation}
+                      <span className="font-medium">Location:</span> {selectedLoad.delivery_location}
                     </div>
                     <div>
                       <span className="font-medium">Date:</span>{" "}
-                      {new Date(selectedLoadForDetails.deliveryDate).toLocaleDateString()}
-                    </div>
-                    <div>
-                      <span className="font-medium">Time:</span> 8:00 AM - 5:00 PM
+                      {new Date(selectedLoad.delivery_date).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Load Specifications */}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-3">Load Specifications</h4>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="font-medium">Rate:</span> ${selectedLoadForDetails.rate.toLocaleString()}
+                    <span className="font-medium">Rate:</span> ${selectedLoad.rate.toLocaleString()}
                   </div>
                   <div>
-                    <span className="font-medium">Distance:</span> {selectedLoadForDetails.distance} miles
+                    <span className="font-medium">Distance:</span> {selectedLoad.distance} miles
                   </div>
                   <div>
-                    <span className="font-medium">Rate/Mile:</span> $
-                    {selectedLoadForDetails.distance ? getRatePerMile(selectedLoadForDetails.rate, selectedLoadForDetails.distance) : 'N/A'}
+                    <span className="font-medium">Rate/Mile:</span> ${getRatePerMile(selectedLoad.rate, selectedLoad.distance)}
                   </div>
                   <div>
-                    <span className="font-medium">Weight:</span> {selectedLoadForDetails.weight}
+                    <span className="font-medium">Weight:</span> {selectedLoad.weight.toLocaleString()} lbs
                   </div>
                   <div>
-                    <span className="font-medium">Equipment:</span> {selectedLoadForDetails.equipmentType}
+                    <span className="font-medium">Equipment:</span> {selectedLoad.equipment_type}
                   </div>
+                  <div>
+                    <span className="font-medium">Type:</span> {selectedLoad.load_type}
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="font-medium">Description:</span> {selectedLoad.description}
                 </div>
               </div>
 
-            
-              {/* Action Buttons */}
               <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => handlePhone(selectedLoadForDetails)}>
+                <Button variant="outline" onClick={() => handlePhone(selectedLoad)}>
                   Call Broker
                 </Button>
-                <Button variant="outline" onClick={() => handleMessage(selectedLoadForDetails)}>
+                <Button variant="outline" onClick={() => handleMessage(selectedLoad)}>
                   Send Message
                 </Button>
                 <Button
                   className="bg-green-600 hover:bg-green-700"
-                  onClick={() => handleNegotiate(selectedLoadForDetails)}
+                  onClick={() => {
+                    setIsDetailsDialogOpen(false)
+                    handleNegotiate(selectedLoad)
+                  }}
                 >
                   Negotiate Rate
                 </Button>
@@ -658,23 +559,16 @@ export function DispatcherLoadBoard() {
             <DialogTitle>Contact Broker</DialogTitle>
             <DialogDescription>Broker contact information</DialogDescription>
           </DialogHeader>
-          {selectedLoadForPhone && (
+          {selectedLoad && (
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">{selectedLoadForPhone.brokerCompany}</h4>
+                <h4 className="font-semibold mb-2">{selectedLoad.broker_company}</h4>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium">Contact Person:</span> John Smith
+                    <span className="font-medium">Contact Person:</span> {selectedLoad.broker_name}
                   </div>
                   <div>
-                    <span className="font-medium">Phone:</span> (555) 123-4567
-                  </div>
-                  <div>
-                    <span className="font-medium">Email:</span> john@
-                    {selectedLoadForPhone.brokerCompany.toLowerCase().replace(/\s+/g, "")}.com
-                  </div>
-                  <div>
-                    <span className="font-medium">MC Number:</span> MC-123456
+                    <span className="font-medium">MC Number:</span> {selectedLoad.broker_mc}
                   </div>
                 </div>
               </div>
@@ -683,10 +577,10 @@ export function DispatcherLoadBoard() {
                 <h5 className="font-medium mb-2">Load Reference</h5>
                 <div className="text-sm">
                   <div>
-                    {selectedLoadForPhone.pickupLocation} → {selectedLoadForPhone.deliveryLocation}
+                    {selectedLoad.pickup_location} → {selectedLoad.delivery_location}
                   </div>
                   <div>
-                    Rate: ${selectedLoadForPhone.rate.toLocaleString()} | {selectedLoadForPhone.distance} miles
+                    Rate: ${selectedLoad.rate.toLocaleString()} | {selectedLoad.distance} miles
                   </div>
                 </div>
               </div>
@@ -694,15 +588,6 @@ export function DispatcherLoadBoard() {
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsPhoneDialogOpen(false)}>
                   Close
-                </Button>
-                <Button
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    window.open("tel:+15551234567", "_self")
-                    setIsPhoneDialogOpen(false)
-                  }}
-                >
-                  Call Now
                 </Button>
               </div>
             </div>
@@ -717,20 +602,20 @@ export function DispatcherLoadBoard() {
             <DialogTitle>Send Message to Broker</DialogTitle>
             <DialogDescription>Send a message regarding this load</DialogDescription>
           </DialogHeader>
-          {selectedLoadForMessage && (
+          {selectedLoad && (
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Load Information</h4>
                 <div className="text-sm">
                   <div>
-                    <span className="font-medium">Route:</span> {selectedLoadForMessage.pickupLocation} →{" "}
-                    {selectedLoadForMessage.deliveryLocation}
+                    <span className="font-medium">Route:</span> {selectedLoad.pickup_location} →{" "}
+                    {selectedLoad.delivery_location}
                   </div>
                   <div>
-                    <span className="font-medium">Rate:</span> ${selectedLoadForMessage.rate.toLocaleString()}
+                    <span className="font-medium">Rate:</span> ${selectedLoad.rate.toLocaleString()}
                   </div>
                   <div>
-                    <span className="font-medium">Broker:</span> {selectedLoadForMessage.brokerCompany}
+                    <span className="font-medium">Broker:</span> {selectedLoad.broker_company}
                   </div>
                 </div>
               </div>
@@ -752,7 +637,7 @@ export function DispatcherLoadBoard() {
                 <Button
                   className="bg-green-600 hover:bg-green-700"
                   onClick={() => {
-                    alert(`Message sent to ${selectedLoadForMessage.brokerCompany}!`)
+                    alert(`Message sent to ${selectedLoad.broker_company}!`)
                     setIsMessageDialogOpen(false)
                   }}
                 >
@@ -771,23 +656,23 @@ export function DispatcherLoadBoard() {
             <DialogTitle>Negotiate Load Rate</DialogTitle>
             <DialogDescription>Make a counter offer for this load</DialogDescription>
           </DialogHeader>
-          {selectedLoadForNegotiate && (
+          {selectedLoad && (
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Load Summary</h4>
                 <div className="text-sm space-y-1">
                   <div>
-                    <span className="font-medium">Route:</span> {selectedLoadForNegotiate.pickupLocation} →{" "}
-                    {selectedLoadForNegotiate.deliveryLocation}
+                    <span className="font-medium">Route:</span> {selectedLoad.pickup_location} →{" "}
+                    {selectedLoad.delivery_location}
                   </div>
                   <div>
-                    <span className="font-medium">Distance:</span> {selectedLoadForNegotiate.distance} miles
+                    <span className="font-medium">Distance:</span> {selectedLoad.distance} miles
                   </div>
                   <div>
-                    <span className="font-medium">Equipment:</span> {selectedLoadForNegotiate.equipmentType}
+                    <span className="font-medium">Equipment:</span> {selectedLoad.equipment_type}
                   </div>
                   <div>
-                    <span className="font-medium">Broker:</span> {selectedLoadForNegotiate.brokerCompany}
+                    <span className="font-medium">Broker:</span> {selectedLoad.broker_company}
                   </div>
                 </div>
               </div>
@@ -796,10 +681,10 @@ export function DispatcherLoadBoard() {
                 <div className="bg-red-50 p-3 rounded-lg">
                   <div className="text-sm font-medium text-red-800">Original Rate</div>
                   <div className="text-lg font-bold text-red-600">
-                    ${selectedLoadForNegotiate.rate.toLocaleString()}
+                    ${selectedLoad.rate.toLocaleString()}
                   </div>
                   <div className="text-xs text-red-600">
-                    ${selectedLoadForNegotiate.distance ? getRatePerMile(selectedLoadForNegotiate.rate, selectedLoadForNegotiate.distance) : 'N/A'}/mile
+                    ${getRatePerMile(selectedLoad.rate, selectedLoad.distance)}/mile
                   </div>
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg">
@@ -849,3 +734,4 @@ export function DispatcherLoadBoard() {
     </div>
   )
 }
+        
