@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { memoryStore } from "@/lib/memory-store"
+import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 type LoadRouteContext = { params: Promise<{ id: string }> }
 
@@ -9,17 +9,23 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const loads = memoryStore.getAllLoads()
-    const load = loads.find(l => l.id === id)
-
-    if (!load) {
-      return NextResponse.json({ error: "Load not found" }, { status: 404 })
+    
+    const { data, error } = await supabase
+      .from('loads')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    
+    if (!data) {
+      return NextResponse.json({ error: 'Load not found' }, { status: 404 })
     }
-
-    return NextResponse.json(load)
+    
+    return NextResponse.json(data)
   } catch (error) {
-    console.error("Error fetching load:", error)
-    return NextResponse.json({ error: "Failed to fetch load" }, { status: 500 })
+    console.error('Error fetching load:', error)
+    return NextResponse.json({ error: 'Failed to fetch load' }, { status: 500 })
   }
 }
 
@@ -30,23 +36,28 @@ export async function PUT(
   try {
     const { id } = await params
     const updates = await request.json()
-    console.log("API: Updating load", id, "with:", updates)
-
-    const updatedLoad = memoryStore.updateLoad(id, updates)
-
-    if (!updatedLoad) {
-      return NextResponse.json({ error: "Load not found" }, { status: 404 })
+    
+    const { data, error } = await supabase
+      .from('loads')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    if (!data) {
+      return NextResponse.json({ error: 'Load not found' }, { status: 404 })
     }
-
-    console.log("API: Load updated successfully:", updatedLoad.id)
+    
     return NextResponse.json({
       success: true,
-      load: updatedLoad,
-      message: "Load updated successfully"
+      load: data,
+      message: 'Load updated successfully'
     })
   } catch (error) {
-    console.error("API: Error updating load:", error)
-    return NextResponse.json({ error: "Failed to update load" }, { status: 500 })
+    console.error('Error updating load:', error)
+    return NextResponse.json({ error: 'Failed to update load' }, { status: 500 })
   }
 }
 
@@ -56,17 +67,20 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    console.log("API: Deleting load:", id)
-
-    memoryStore.deleteLoad(id)
-
-    console.log("API: Load deleted successfully:", id)
+    
+    const { error } = await supabase
+      .from('loads')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    
     return NextResponse.json({
       success: true,
-      message: "Load deleted successfully"
+      message: 'Load deleted successfully'
     })
   } catch (error) {
-    console.error("API: Error deleting load:", error)
-    return NextResponse.json({ error: "Failed to delete load" }, { status: 500 })
+    console.error('Error deleting load:', error)
+    return NextResponse.json({ error: 'Failed to delete load' }, { status: 500 })
   }
 }

@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { memoryStore } from '@/lib/memory-store'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const brokerId = searchParams.get('brokerId')
     
-    let loads
+    let query = supabase.from('loads').select('*')
+    
     if (brokerId) {
-      loads = memoryStore.getLoadsByBrokerId(brokerId)
-    } else {
-      loads = memoryStore.getAllLoads()
+      query = query.eq('broker_id', brokerId)
     }
     
-    return NextResponse.json(loads)
+    const { data, error } = await query.order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return NextResponse.json(data || [])
   } catch (error) {
     console.error('Error fetching loads:', error)
     return NextResponse.json(
@@ -27,33 +30,43 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Validate required fields
-    const requiredFields = ['brokerId', 'brokerName', 'brokerCompany', 'brokerMcNumber', 'origin', 'destination', 'pickupDate', 'deliveryDate', 'weight', 'rate', 'distance', 'equipment', 'loadType', 'description']
-    const missingFields = requiredFields.filter(field => !body[field])
-    
-    if (missingFields.length > 0) {
-      return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
-        { status: 400 }
-      )
-    }
-
-    const newLoad = {
+    const loadData = {
       id: `LOAD-${Date.now()}`,
-      ...body,
-      weight: typeof body.weight === 'string' ? parseInt(body.weight) : body.weight,
-      rate: typeof body.rate === 'string' ? parseInt(body.rate) : body.rate,
-      distance: typeof body.distance === 'string' ? parseInt(body.distance) : body.distance,
-      createdAt: new Date().toISOString(),
-      pickupLocation: body.origin,
-      deliveryLocation: body.destination,
-      equipmentType: body.equipment,
-      brokerMC: body.brokerMcNumber,
+      broker_id: body.brokerId,
+      broker_name: body.brokerName,
+      broker_company: body.brokerCompany,
+      broker_mc_number: body.brokerMcNumber,
+      broker_mc: body.brokerMcNumber,
+      origin: body.origin,
+      destination: body.destination,
+      pickup_location: body.origin,
+      delivery_location: body.destination,
+      pickup_date: body.pickupDate,
+      delivery_date: body.deliveryDate,
+      weight: parseInt(body.weight),
+      rate: parseInt(body.rate),
+      distance: parseInt(body.distance),
+      equipment: body.equipment,
+      equipment_type: body.equipment,
+      load_type: body.loadType,
+      description: body.description,
+      status: 'available',
+      expedited: body.expedited || false,
+      hazmat: body.hazmat || false,
+      team_driver: body.teamDriver || false,
+      special_requirements: body.specialRequirements || null,
+      stops: body.stops || null,
     }
     
-    memoryStore.addLoad(newLoad)
+    const { data, error } = await supabase
+      .from('loads')
+      .insert([loadData])
+      .select()
+      .single()
     
-    return NextResponse.json(newLoad, { status: 201 })
+    if (error) throw error
+    
+    return NextResponse.json(data, { status: 201 })
   } catch (error) {
     console.error('Error creating load:', error)
     return NextResponse.json(

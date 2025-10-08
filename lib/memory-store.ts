@@ -7,30 +7,42 @@ export const memoryStore = {
   // Loads
   addLoad: (load: any) => {
     loads.push(load)
+    console.log('Memory Store: Load added', load.id, 'Total loads:', loads.length)
     return load
   },
   
-  getAllLoads: () => loads,
+  getAllLoads: () => {
+    console.log('Memory Store: Getting all loads, count:', loads.length)
+    return loads
+  },
   
   getLoadsByBrokerId: (brokerId: string) => {
-    return loads.filter(load => load.brokerId === brokerId)
+    const filtered = loads.filter(load => load.brokerId === brokerId)
+    console.log(`Memory Store: Getting loads for broker ${brokerId}, found:`, filtered.length)
+    return filtered
   },
   
   getAvailableLoads: () => {
-    return loads.filter(load => load.status === 'available')
+    const available = loads.filter(load => load.status === 'available')
+    console.log('Memory Store: Getting available loads, found:', available.length)
+    return available
   },
   
   updateLoad: (id: string, updates: any) => {
     const index = loads.findIndex(load => load.id === id)
     if (index !== -1) {
       loads[index] = { ...loads[index], ...updates }
+      console.log('Memory Store: Load updated', id)
       return loads[index]
     }
+    console.log('Memory Store: Load not found for update', id)
     return null
   },
   
   deleteLoad: (id: string) => {
+    const before = loads.length
     loads = loads.filter(load => load.id !== id)
+    console.log(`Memory Store: Load deleted ${id}, before: ${before}, after: ${loads.length}`)
   },
   
   // Trucks

@@ -1,7 +1,19 @@
 import { NextResponse } from 'next/server'
-import { memoryStore } from '@/lib/memory-store'
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
-  const loads = memoryStore.getAvailableLoads()
-  return NextResponse.json(loads)
+  try {
+    const { data, error } = await supabase
+      .from('loads')
+      .select('*')
+      .eq('status', 'available')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return NextResponse.json(data || [])
+  } catch (error) {
+    console.error('Error fetching available loads:', error)
+    return NextResponse.json([], { status: 200 })
+  }
 }
