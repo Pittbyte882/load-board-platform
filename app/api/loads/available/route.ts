@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
+import { memoryStore } from '@/lib/memory-store'
 
 export async function GET() {
-  // In production, fetch available loads from database
-  // For now, return empty array for new users
-  
-  return NextResponse.json([])
+  const loads = memoryStore.getAvailableLoads()
+  return NextResponse.json(loads)
 }

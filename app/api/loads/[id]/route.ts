@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { updateLoad, deleteLoad, getLoadById } from "@/lib/loads-store"
+import { memoryStore } from "@/lib/memory-store"
 
 type LoadRouteContext = { params: Promise<{ id: string }> }
 
@@ -9,7 +9,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const load = getLoadById(id)
+    const loads = memoryStore.getAllLoads()
+    const load = loads.find(l => l.id === id)
 
     if (!load) {
       return NextResponse.json({ error: "Load not found" }, { status: 404 })
@@ -31,7 +32,7 @@ export async function PUT(
     const updates = await request.json()
     console.log("API: Updating load", id, "with:", updates)
 
-    const updatedLoad = updateLoad(id, updates)
+    const updatedLoad = memoryStore.updateLoad(id, updates)
 
     if (!updatedLoad) {
       return NextResponse.json({ error: "Load not found" }, { status: 404 })
@@ -57,11 +58,7 @@ export async function DELETE(
     const { id } = await params
     console.log("API: Deleting load:", id)
 
-    const deleted = deleteLoad(id)
-
-    if (!deleted) {
-      return NextResponse.json({ error: "Load not found" }, { status: 404 })
-    }
+    memoryStore.deleteLoad(id)
 
     console.log("API: Load deleted successfully:", id)
     return NextResponse.json({
@@ -73,4 +70,3 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete load" }, { status: 500 })
   }
 }
-

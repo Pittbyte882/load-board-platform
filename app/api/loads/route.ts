@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { memoryStore } from '@/lib/memory-store'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const brokerId = searchParams.get('brokerId')
     
-    // In production, fetch loads from database based on brokerId
-    // For now, return empty array for new users
+    let loads
+    if (brokerId) {
+      loads = memoryStore.getLoadsByBrokerId(brokerId)
+    } else {
+      loads = memoryStore.getAllLoads()
+    }
     
-    return NextResponse.json([])
+    return NextResponse.json(loads)
   } catch (error) {
     console.error('Error fetching loads:', error)
     return NextResponse.json(
@@ -33,9 +38,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // In production, save to database
-    // For now, return the load data with a generated ID
-    
     const newLoad = {
       id: `LOAD-${Date.now()}`,
       ...body,
@@ -43,7 +45,13 @@ export async function POST(request: NextRequest) {
       rate: typeof body.rate === 'string' ? parseInt(body.rate) : body.rate,
       distance: typeof body.distance === 'string' ? parseInt(body.distance) : body.distance,
       createdAt: new Date().toISOString(),
+      pickupLocation: body.origin,
+      deliveryLocation: body.destination,
+      equipmentType: body.equipment,
+      brokerMC: body.brokerMcNumber,
     }
+    
+    memoryStore.addLoad(newLoad)
     
     return NextResponse.json(newLoad, { status: 201 })
   } catch (error) {
