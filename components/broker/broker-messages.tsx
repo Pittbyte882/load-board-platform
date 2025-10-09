@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,12 +13,33 @@ import { useAuth } from "@/lib/auth-context"
 
 export function BrokerMessages() {
   const { user } = useAuth()
-  const { getConversationsForUser, getMessagesForConversation, addMessage, markAsRead } = useMessagingStore()
+  const { 
+    getConversationsForUser, 
+    getMessagesForConversation, 
+    addMessage, 
+    markAsRead,
+    fetchConversations,
+    fetchMessages 
+  } = useMessagingStore()
 
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<"all" | "unread" | "carriers" | "dispatchers">("all")
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    if (user) {
+      fetchConversations(user.id)
+    }
+  }, [user, fetchConversations])
+
+  // Fetch messages when conversation is selected
+  useEffect(() => {
+    if (selectedConversationId) {
+      fetchMessages(selectedConversationId)
+    }
+  }, [selectedConversationId, fetchMessages])
 
   // Get conversations for current user
   const conversations = user ? getConversationsForUser(user.id) : []
@@ -44,13 +65,13 @@ export function BrokerMessages() {
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId)
   const conversationMessages = selectedConversationId ? getMessagesForConversation(selectedConversationId) : []
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return
 
     const otherParticipant = selectedConversation.participants.find((p) => p.id !== user.id)
     if (!otherParticipant) return
 
-    addMessage({
+    await addMessage({
       senderId: user.id,
       senderName: `${user.firstName} ${user.lastName}`,
       senderRole: user.role as "broker",
@@ -68,10 +89,10 @@ export function BrokerMessages() {
     setNewMessage("")
   }
 
-  const handleSelectConversation = (conversationId: string) => {
+  const handleSelectConversation = async (conversationId: string) => {
     setSelectedConversationId(conversationId)
     if (user) {
-      markAsRead(conversationId, user.id)
+      await markAsRead(conversationId, user.id)
     }
   }
 
