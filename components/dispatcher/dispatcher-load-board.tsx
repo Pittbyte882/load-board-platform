@@ -1,4 +1,5 @@
 "use client"
+import { useAuth } from "@/lib/auth-context"
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,6 +39,7 @@ interface Load {
 }
 
 export function DispatcherLoadBoard() {
+  const { user } = useAuth() 
   const [loads, setLoads] = useState<Load[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -143,16 +145,93 @@ export function DispatcherLoadBoard() {
     setIsNegotiateDialogOpen(true)
   }
 
-  const handleSubmitNegotiation = () => {
+  const handleSubmitNegotiation = async () => {
     if (!selectedLoad || !counterOffer) return
 
-    alert(
-      `Negotiation sent to ${selectedLoad.broker_company}!\nOriginal Rate: $${selectedLoad.rate.toLocaleString()}\nYour Counter Offer: $${Number(counterOffer).toLocaleString()}`,
-    )
+    if (!user) {
+      alert('Please log in to negotiate loads')
+      return
+    }
 
-    setIsNegotiateDialogOpen(false)
-    setSelectedLoad(null)
-    setCounterOffer("")
+    const message = (document.getElementById('negotiationMessage') as HTMLTextAreaElement)?.value
+
+    try {
+      const response = await fetch('/api/loads/negotiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          loadId: selectedLoad.id,
+          negotiatorId: user.id,
+          negotiatorName: `${user.firstName} ${user.lastName}`,
+          negotiatorCompany: user.companyName,
+          negotiatorRole: 'dispatcher',
+          brokerId: selectedLoad.broker_id,
+          brokerName: selectedLoad.broker_name,
+          brokerCompany: selectedLoad.broker_company,
+          originalRate: selectedLoad.rate,
+          counterOffer: Number(counterOffer),
+          message,
+          pickupLocation: selectedLoad.pickup_location,
+          deliveryLocation: selectedLoad.delivery_location
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`Negotiation sent to ${selectedLoad.broker_company}!\nOriginal Rate: $${selectedLoad.rate.toLocaleString()}\nYour Counter Offer: $${Number(counterOffer).toLocaleString()}`)
+        setIsNegotiateDialogOpen(false)
+        setSelectedLoad(null)
+        setCounterOffer("")
+      } else {
+        alert('Failed to send negotiation. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error submitting negotiation:', error)
+      alert('An error occurred. Please try again.')
+    }
+  }
+// information to be displayed when load is accepted 
+  const handleAcceptLoad = async (load: Load) => {
+    if (!user) {
+      alert('Please log in to accept loads')
+      return
+    }
+
+    if (!confirm(`Accept this load for $${load.rate.toLocaleString()}?`)) return
+
+    try {
+      const response = await fetch('/api/loads/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          loadId: load.id,
+          acceptedById: user.id,
+          acceptedByName: `${user.firstName} ${user.lastName}`,
+          acceptedByCompany: user.companyName,
+          acceptedByRole: 'dispatcher',
+          acceptedByPhone: user.phone || 'Not provided', // ADD THIS to display phone #
+          acceptedByMcNumber: 'MC-789012', // ADD THIS - Get from user profile in real app
+          brokerId: load.broker_id,
+          brokerName: load.broker_name,
+          brokerCompany: load.broker_company,
+          acceptedRate: load.rate,
+          pickupLocation: load.pickup_location,
+          deliveryLocation: load.delivery_location
+        })
+      })
+
+      if (response.ok) {
+        alert(`Load ${load.id} accepted successfully!\nRate: $${load.rate.toLocaleString()}\nThe broker has been notified.`)
+        fetchLoads() // Refresh the load list
+        setIsNegotiateDialogOpen(false)
+        setSelectedLoad(null)
+      } else {
+        alert('Failed to accept load. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error accepting load:', error)
+      alert('An error occurred. Please try again.')
+    }
   }
 
   const getRatePerMile = (rate: number, distance: number) => {
@@ -428,7 +507,18 @@ export function DispatcherLoadBoard() {
                   <Button variant="outline" size="sm" onClick={() => handleMessage(load)}>
                     Message
                   </Button>
-                  <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleNegotiate(load)}>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    size="sm"
+                    onClick={() => handleAcceptLoad(load)}
+                  >
+                    Accept Load
+                  </Button>
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700" 
+                    size="sm"
+                    onClick={() => handleNegotiate(load)}
+                  >
                     Negotiate
                   </Button>
                 </div>
@@ -651,7 +741,7 @@ export function DispatcherLoadBoard() {
 
       {/* Negotiate Dialog */}
       <Dialog open={isNegotiateDialogOpen} onOpenChange={setIsNegotiateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Negotiate Load Rate</DialogTitle>
             <DialogDescription>Make a counter offer for this load</DialogDescription>
@@ -680,7 +770,7 @@ export function DispatcherLoadBoard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-red-50 p-3 rounded-lg">
                   <div className="text-sm font-medium text-red-800">Original Rate</div>
-                  <div className="text-lg font-bold text-red-600">
+                  <div className="text-2xl font-bold text-red-600">
                     ${selectedLoad.rate.toLocaleString()}
                   </div>
                   <div className="text-xs text-red-600">
@@ -689,7 +779,9 @@ export function DispatcherLoadBoard() {
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg">
                   <div className="text-sm font-medium text-green-800">Your Counter Offer</div>
-                  <div className="text-lg font-bold text-green-600">${Number(counterOffer || 0).toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${Number(counterOffer || 0).toLocaleString()}
+                  </div>
                   <div className="text-xs text-green-600">${getCounterOfferRatePerMile()}/mile</div>
                 </div>
               </div>
@@ -715,23 +807,28 @@ export function DispatcherLoadBoard() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsNegotiateDialogOpen(false)}>
-                  Cancel
-                </Button>
+              <div className="flex flex-col space-y-2">
                 <Button
                   onClick={handleSubmitNegotiation}
                   disabled={!counterOffer || Number(counterOffer) <= 0}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 w-full"
                 >
                   Send Counter Offer
+                </Button>
+                <Button
+                  onClick={() => handleAcceptLoad(selectedLoad)}
+                  className="bg-blue-600 hover:bg-blue-700 w-full"
+                >
+                  Accept Load at Original Rate
+                </Button>
+                <Button variant="outline" onClick={() => setIsNegotiateDialogOpen(false)} className="w-full">
+                  Cancel
                 </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </div>
+     </div>
   )
-}
-        
+} 

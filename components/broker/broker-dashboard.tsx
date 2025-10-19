@@ -15,6 +15,7 @@ import { AvailableTrucks } from "./available-trucks"
 import { BrokerSupport } from "./broker-support"
 import { WelcomeNewUser } from "../dashboard/welcome-new-user"
 import { useAuth } from "@/lib/auth-context"
+import { LoadNotifications } from "@/components/broker/load-notifications"
 
 export function BrokerDashboard() {
   const { user } = useAuth()
@@ -45,10 +46,11 @@ export function BrokerDashboard() {
       
       setLoading(true)
       try {
-        // Fetch real data from your API
-        const response = await fetch('/api/broker/dashboard', {
+        // Fetch real data from your API - PASS USER ID HERE
+        const response = await fetch(`/api/broker/dashboard?brokerId=${user.id}`, {
+          cache: 'no-store',
           headers: {
-            //'Authorization': `Bearer ${user.token}`, // if you use auth tokens
+            'Cache-Control': 'no-cache'
           }
         })
         
@@ -193,7 +195,10 @@ export function BrokerDashboard() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6">
+         <TabsContent value="dashboard" className="space-y-6">
+          {/* Load Notifications - NEW SECTION */}
+          <LoadNotifications />
+          
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>

@@ -1,6 +1,5 @@
 "use client"
-import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
-import type React from "react"
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
+import { useAuth } from "@/lib/auth-context" 
 import {
   MapPin,
   Calendar,
@@ -21,12 +22,39 @@ import {
   Building,
 } from "lucide-react"
 
+interface LoadFormData {
+  origin: string
+  destination: string
+  pickupDate: string
+  deliveryDate: string
+  weight: string
+  rate: string
+  equipment: string
+  loadType: string
+  description: string
+  specialRequirements: string
+  hazmat: boolean
+  teamDriver: boolean
+  expedited: boolean
+  stops: Array<{
+    location: string
+    type: "pickup" | "delivery"
+    date: string
+    notes?: string
+  }>
+}
+
 interface PostLoadFormProps {
   onSuccess: () => void
 }
 
+
+
 export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
-  const [formData, setFormData] = useState({
+  const { user } = useAuth()
+
+  // KEEP THIS ONE - This is the correct place for state
+  const [formData, setFormData] = useState<LoadFormData>({
     origin: "",
     destination: "",
     pickupDate: "",
@@ -40,12 +68,13 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
     hazmat: false,
     teamDriver: false,
     expedited: false,
-    stops: [] as Array<{ location: string; type: "pickup" | "delivery"; date: string; notes?: string }>,
+    stops: [],
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [submitMessage, setSubmitMessage] = useState("")
+
 
   // Updated equipment types to match the new requirements
   const equipmentTypes = [
@@ -119,6 +148,12 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+     if (!user) {
+    setSubmitStatus("error")
+    setSubmitMessage("You must be logged in to post a load")
+    return
+  }
+
     if (
       !formData.origin ||
       !formData.destination ||
@@ -144,9 +179,9 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
       const distance = calculateDistance(formData.origin, formData.destination)
 
       const loadData = {
-        brokerId: "broker-1", // In a real app, get from auth context
-        brokerName: "John Smith",
-        brokerCompany: "Smith Logistics",
+        brokerId: user.id,  // Use real user ID instead of "broker-1"
+        brokerName: `${user.firstName} ${user.lastName}`,
+        brokerCompany: user.companyName,
         brokerMcNumber: "MC-123456", // In a real app, get from user profile
         origin: formData.origin,
         destination: formData.destination,

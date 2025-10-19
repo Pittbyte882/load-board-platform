@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, MapPin, Calendar, Package, Truck, Clock, Phone, Mail, Building } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 import type { Load } from "@/lib/types"
 
 export function LoadBoard() {
+  const { user } = useAuth()
   const [loads, setLoads] = useState<Load[]>([])
   const [filteredLoads, setFilteredLoads] = useState<Load[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -135,22 +137,22 @@ export function LoadBoard() {
     })
 
     // Sort loads
-filtered.sort((a, b) => {
-  switch (sortBy) {
-    case "rate":
-      return b.rate - a.rate
-    case "ratePerMile":
-      const aRatePerMile = a.distance ? a.rate / a.distance : 0;
-      const bRatePerMile = b.distance ? b.rate / b.distance : 0;
-      return bRatePerMile - aRatePerMile;
-    case "pickupDate":
-      return new Date(a.pickupDate).getTime() - new Date(b.pickupDate).getTime()
-    case "distance":
-      return (a.distance || 0) - (b.distance || 0);
-    default: // postedDate
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  }
-})
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "rate":
+          return b.rate - a.rate
+        case "ratePerMile":
+          const aRatePerMile = a.distance ? a.rate / a.distance : 0
+          const bRatePerMile = b.distance ? b.rate / b.distance : 0
+          return bRatePerMile - aRatePerMile
+        case "pickupDate":
+          return new Date(a.pickupDate).getTime() - new Date(b.pickupDate).getTime()
+        case "distance":
+          return (a.distance || 0) - (b.distance || 0)
+        default: // postedDate
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
     setFilteredLoads(filtered)
   }
 
@@ -163,16 +165,87 @@ filtered.sort((a, b) => {
   const submitNegotiation = async () => {
     if (!selectedLoad || !counterOffer) return
 
-    console.log(`Negotiating load ${selectedLoad.id} with counter offer: $${counterOffer}`)
+    if (!user) {
+      alert('Please log in to negotiate loads')
+      return
+    }
 
-    // In a real app, this would send the negotiation to the broker
-    alert(
-      `Negotiation sent to ${selectedLoad.brokerCompany}!\nOriginal Rate: $${selectedLoad.rate}\nYour Counter Offer: $${counterOffer}`,
-    )
+    const message = (document.getElementById('negotiation-message') as HTMLTextAreaElement)?.value
 
-    setShowNegotiateModal(false)
-    setSelectedLoad(null)
-    setCounterOffer("")
+    try {
+      const response = await fetch('/api/loads/negotiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          loadId: selectedLoad.id,
+          negotiatorId: user.id,
+          negotiatorName: `${user.firstName} ${user.lastName}`,
+          negotiatorCompany: user.companyName,
+          negotiatorRole: 'carrier',
+          brokerId: selectedLoad.brokerId,
+          brokerName: selectedLoad.brokerName,
+          brokerCompany: selectedLoad.brokerCompany,
+          originalRate: selectedLoad.rate,
+          counterOffer: Number(counterOffer),
+          message,
+          pickupLocation: selectedLoad.pickupLocation,
+          deliveryLocation: selectedLoad.deliveryLocation
+        })
+      })
+
+      if (response.ok) {
+        alert(`Negotiation sent to ${selectedLoad.brokerCompany}!`)
+        setShowNegotiateModal(false)
+        setSelectedLoad(null)
+        setCounterOffer("")
+      } else {
+        alert('Failed to send negotiation. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error submitting negotiation:', error)
+      alert('An error occurred. Please try again.')
+    }
+  }
+
+  const handleAcceptLoad = async (load: Load) => {
+    if (!user) {
+      alert('Please log in to accept loads')
+      return
+    }
+
+    if (!confirm(`Accept this load for $${load.rate.toLocaleString()}?`)) return
+
+    try {
+      const response = await fetch('/api/loads/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          loadId: load.id,
+          acceptedById: user.id,
+          acceptedByName: `${user.firstName} ${user.lastName}`,
+          acceptedByCompany: user.companyName,
+          acceptedByRole: 'carrier',
+          brokerId: load.brokerId,
+          brokerName: load.brokerName,
+          brokerCompany: load.brokerCompany,
+          acceptedRate: load.rate,
+          pickupLocation: load.pickupLocation,
+          deliveryLocation: load.deliveryLocation
+        })
+      })
+
+      if (response.ok) {
+        alert(`Load ${load.id} accepted successfully!`)
+        fetchLoads() // Refresh the load list
+        setShowNegotiateModal(false)
+        setSelectedLoad(null)
+      } else {
+        alert('Failed to accept load. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error accepting load:', error)
+      alert('An error occurred. Please try again.')
+    }
   }
 
   const handleViewDetails = (load: Load) => {
@@ -231,7 +304,7 @@ filtered.sort((a, b) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Origin</label>
-                  <LocationAutocomplete placeholder="City, State or ZIP"  value={origin}  onChange={(value) => setOrigin(value)}/>
+                  <LocationAutocomplete placeholder="City, State or ZIP" value={origin} onChange={(value) => setOrigin(value)} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Deadhead Radius</label>
@@ -250,8 +323,7 @@ filtered.sort((a, b) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Delivery Location</label>
-                  <LocationAutocomplete   placeholder="City, State or ZIP"  value={deliveryLocation}  onChange={(value) => setDeliveryLocation(value)}/>
-
+                  <LocationAutocomplete placeholder="City, State or ZIP" value={deliveryLocation} onChange={(value) => setDeliveryLocation(value)} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Delivery Radius</label>
@@ -406,7 +478,7 @@ filtered.sort((a, b) => {
                       <p className="text-2xl font-bold text-green-600">${load.rate.toLocaleString()}</p>
                       <p className="text-sm text-gray-500">
                         ${load.distance ? (load.rate / load.distance).toFixed(2) : 'N/A'}/mile
-                     </p>
+                      </p>
                     </div>
                   </div>
 
@@ -480,8 +552,11 @@ filtered.sort((a, b) => {
                   <Button onClick={() => handleViewDetails(load)} variant="outline" className="w-full">
                     View Details
                   </Button>
-                  <Button onClick={() => handleNegotiate(load)} className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={() => handleNegotiate(load)} className="w-full bg-green-600 hover:bg-green-700">
                     Negotiate
+                  </Button>
+                  <Button onClick={() => handleAcceptLoad(load)} className="w-full bg-blue-600 hover:bg-blue-700">
+                    Accept Load
                   </Button>
                   <div className="flex space-x-2">
                     <Button
@@ -552,7 +627,9 @@ filtered.sort((a, b) => {
                   <p>
                     <strong>Rate:</strong> ${selectedLoad.rate.toLocaleString()}
                   </p>
-                  <strong>Rate/Mile:</strong> ${selectedLoad.distance ? (selectedLoad.rate / selectedLoad.distance).toFixed(2) : 'N/A'}
+                  <p>
+                    <strong>Rate/Mile:</strong> ${selectedLoad.distance ? (selectedLoad.rate / selectedLoad.distance).toFixed(2) : 'N/A'}
+                  </p>
                   <p>
                     <strong>Equipment:</strong> {selectedLoad.equipmentType}
                   </p>
@@ -597,8 +674,11 @@ filtered.sort((a, b) => {
               </div>
 
               <div className="flex space-x-2 pt-4">
-                <Button onClick={() => handleNegotiate(selectedLoad)} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => handleNegotiate(selectedLoad)} className="bg-green-600 hover:bg-green-700">
                   Negotiate This Load
+                </Button>
+                <Button onClick={() => handleAcceptLoad(selectedLoad)} className="bg-blue-600 hover:bg-blue-700">
+                  Accept Load
                 </Button>
                 <Button variant="outline" onClick={() => handlePhone(selectedLoad)}>
                   <Phone className="h-4 w-4 mr-2" />
@@ -617,9 +697,9 @@ filtered.sort((a, b) => {
       {/* Negotiate Modal */}
       {showNegotiateModal && selectedLoad && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Negotiate Load - {selectedLoad.id}</h2>
+              <h2 className="text-xl font-bold">Negotiate Load Rate</h2>
               <Button variant="outline" onClick={() => setShowNegotiateModal(false)}>
                 ✕
               </Button>
@@ -628,23 +708,41 @@ filtered.sort((a, b) => {
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2">Load Summary</h3>
-                <p>
+                <p className="text-sm">
                   <strong>Route:</strong> {selectedLoad.pickupLocation} → {selectedLoad.deliveryLocation}
                 </p>
-                <p>
+                <p className="text-sm">
                   <strong>Distance:</strong> {selectedLoad.distance} miles
                 </p>
-                <p>
+                <p className="text-sm">
                   <strong>Equipment:</strong> {selectedLoad.equipmentType}
                 </p>
-                <p>
-                  <strong>Broker's Rate:</strong> ${selectedLoad.rate.toLocaleString()}
+                <p className="text-sm">
+                  <strong>Broker:</strong> {selectedLoad.brokerCompany}
                 </p>
-                <strong>Rate/Mile:</strong> ${selectedLoad.distance ? (selectedLoad.rate / selectedLoad.distance).toFixed(2) : 'N/A'}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-red-800">Original Rate</div>
+                  <div className="text-2xl font-bold text-red-600">${selectedLoad.rate.toLocaleString()}</div>
+                  <div className="text-xs text-red-600">
+                    ${selectedLoad.distance ? (selectedLoad.rate / selectedLoad.distance).toFixed(2) : 'N/A'}/mile
+                  </div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                <div className="text-sm font-medium text-green-800">Your Counter Offer</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${counterOffer ? Number(counterOffer).toLocaleString() : '0'}
+                  </div>
+                  <div className="text-xs text-green-600">
+                    ${counterOffer && selectedLoad.distance ? (Number(counterOffer) / selectedLoad.distance).toFixed(2) : '0.00'}/mile
+                  </div>
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Your Counter Offer ($)</label>
+                <label className="block text-sm font-medium mb-2">Counter Offer Amount ($)</label>
                 <Input
                   type="number"
                   value={counterOffer}
@@ -652,18 +750,33 @@ filtered.sort((a, b) => {
                   placeholder="Enter your rate"
                   className="text-lg"
                 />
-                {counterOffer && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Rate per mile: ${selectedLoad.distance ? (Number(counterOffer) / selectedLoad.distance).toFixed(2) : 'N/A'}
-                  </p>
-                )}
               </div>
 
-              <div className="flex space-x-2">
-                <Button onClick={submitNegotiation} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <div>
+                <label className="block text-sm font-medium mb-2">Message (Optional)</label>
+                <textarea
+                  id="negotiation-message"
+                  className="w-full p-3 border rounded-md resize-none"
+                  rows={3}
+                  placeholder="Add a message to explain your counter offer..."
+                />
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <Button 
+                  onClick={submitNegotiation} 
+                  disabled={!counterOffer || Number(counterOffer) <= 0}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
                   Send Counter Offer
                 </Button>
-                <Button variant="outline" onClick={() => setShowNegotiateModal(false)} className="flex-1">
+                <Button
+                  onClick={() => handleAcceptLoad(selectedLoad)}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Accept Load at Original Rate
+                </Button>
+                <Button variant="outline" onClick={() => setShowNegotiateModal(false)} className="w-full">
                   Cancel
                 </Button>
               </div>
