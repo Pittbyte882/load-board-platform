@@ -4,13 +4,15 @@ import { supabase } from '@/lib/supabase'
 // GET - Fetch messages for a conversation
 export async function GET(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
+    const { conversationId } = await params  // Await params
+    
     const { data: messages, error } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', params.conversationId)
+      .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
 
     if (error) throw error
@@ -42,9 +44,10 @@ export async function GET(
 // POST - Send a message
 export async function POST(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
+    const { conversationId } = await params  // Await params
     const messageData = await request.json()
     
     console.log('📨 Attempting to send message via [conversationId]:', messageData)

@@ -43,6 +43,8 @@ interface MessagingState {
   fetchMessages: (conversationId: string) => Promise<void>
   addMessage: (message: Omit<Message, "id" | "timestamp">) => Promise<void>
   markAsRead: (conversationId: string, userId: string) => Promise<void>
+  deleteMessage: (messageId: string, conversationId: string, userId: string) => Promise<void>
+  deleteConversation: (conversationId: string, userId: string) => Promise<void>
   getConversationsForUser: (userId: string) => Conversation[]
   getMessagesForConversation: (conversationId: string) => Message[]
   createConversation: (
@@ -127,6 +129,64 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       })
     } catch (error) {
       console.error('Error sending message:', error)
+    }
+  },
+
+  deleteMessage: async (messageId: string, conversationId: string, userId: string) => {
+    try {
+      const response = await fetch('/api/messages/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, userId })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete message')
+      }
+
+      // Update local state - remove the message
+      set((state) => ({
+        messages: {
+          ...state.messages,
+          [conversationId]: (state.messages[conversationId] || []).filter(
+            msg => msg.id !== messageId
+          )
+        }
+      }))
+
+      // Refresh conversations to update last message if needed
+      await get().fetchConversations(userId)
+    } catch (error) {
+      console.error('Error deleting message:', error)
+      throw error
+    }
+  },
+
+  deleteConversation: async (conversationId: string, userId: string) => {
+    try {
+      const response = await fetch('/api/messages/conversations/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId, userId })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete conversation')
+      }
+
+      // Update local state - remove the conversation and its messages
+      set((state) => {
+        const { [conversationId]: _, ...remainingMessages } = state.messages
+        return {
+          conversations: state.conversations.filter(conv => conv.id !== conversationId),
+          messages: remainingMessages
+        }
+      })
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
+      throw error
     }
   },
 

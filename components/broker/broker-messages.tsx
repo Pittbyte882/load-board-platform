@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarInitials } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import { MessageSquare, Send, Search, Phone, Mail, Package } from "lucide-react"
+import { MessageSquare, Send, Search, Phone, Mail, Package, Trash2 } from "lucide-react"
 import { useMessagingStore } from "@/lib/messaging-store"
 import { useAuth } from "@/lib/auth-context"
 
@@ -19,7 +19,9 @@ export function BrokerMessages() {
     addMessage, 
     markAsRead,
     fetchConversations,
-    fetchMessages 
+    fetchMessages,
+    deleteMessage,
+    deleteConversation
   } = useMessagingStore()
 
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
@@ -29,10 +31,22 @@ export function BrokerMessages() {
 
   // Fetch conversations on mount
   useEffect(() => {
+    console.log('🔍 Messages tab mounted, user:', user)
     if (user) {
+      console.log('📞 Fetching conversations for user:', user.id)
       fetchConversations(user.id)
+    } else {
+      console.log('❌ No user found')
     }
   }, [user, fetchConversations])
+
+  // Get conversations for current user
+  const conversations = user ? getConversationsForUser(user.id) : []
+
+  // Log conversations when they change
+  useEffect(() => {
+    console.log('📊 Conversations loaded:', conversations.length, conversations)
+  }, [conversations])
 
   // Fetch messages when conversation is selected
   useEffect(() => {
@@ -40,9 +54,6 @@ export function BrokerMessages() {
       fetchMessages(selectedConversationId)
     }
   }, [selectedConversationId, fetchMessages])
-
-  // Get conversations for current user
-  const conversations = user ? getConversationsForUser(user.id) : []
 
   const filteredConversations = conversations.filter((conv) => {
     const otherParticipant = conv.participants.find((p) => p.id !== user?.id)
@@ -61,7 +72,6 @@ export function BrokerMessages() {
 
     return matchesSearch && matchesFilter
   })
-
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId)
   const conversationMessages = selectedConversationId ? getMessagesForConversation(selectedConversationId) : []
 
@@ -93,6 +103,35 @@ export function BrokerMessages() {
     setSelectedConversationId(conversationId)
     if (user) {
       await markAsRead(conversationId, user.id)
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!user || !selectedConversationId) return
+
+    if (!confirm('Are you sure you want to delete this message?')) return
+
+    try {
+      await deleteMessage(messageId, selectedConversationId, user.id)
+    } catch (error) {
+      alert('Failed to delete message. You can only delete your own messages.')
+    }
+  }
+//delete conversation
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (!user) return
+
+    if (!confirm('Are you sure you want to delete this entire conversation? This cannot be undone.')) return
+
+    try {
+      await deleteConversation(conversationId, user.id)
+      // Clear selection if the deleted conversation was selected
+      if (selectedConversationId === conversationId) {
+        setSelectedConversationId(null)
+      }
+    } catch (error) {
+      alert('Failed to delete conversation.')
     }
   }
 
@@ -175,49 +214,62 @@ export function BrokerMessages() {
                 return (
                   <div
                     key={conversation.id}
-                    onClick={() => handleSelectConversation(conversation.id)}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 border-b transition-colors ${
-                      selectedConversationId === conversation.id ? "bg-blue-50 border-blue-200" : ""
+                    className={`p-4 border-b transition-colors relative group ${
+                      selectedConversationId === conversation.id ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarInitials name={otherParticipant.name} />
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm truncate">
-                            {otherParticipant.name}
-                            {otherParticipant.mcNumber && (
-                              <span className="text-xs text-gray-500 ml-1">({otherParticipant.mcNumber})</span>
+                    {/* Delete button - appears on hover */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteConversation(conversation.id)
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    
+                    <div onClick={() => handleSelectConversation(conversation.id)} className="cursor-pointer">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarInitials name={otherParticipant.name} />
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm truncate">
+                              {otherParticipant.name}
+                              {otherParticipant.mcNumber && (
+                                <span className="text-xs text-gray-500 ml-1">({otherParticipant.mcNumber})</span>
+                              )}
+                            </p>
+                            {conversation.unreadCount > 0 && (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                {conversation.unreadCount}
+                              </Badge>
                             )}
-                          </p>
-                          {conversation.unreadCount > 0 && (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
-                              {conversation.unreadCount}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge className={getRoleColor(otherParticipant.role)}>{otherParticipant.role}</Badge>
-                          <span className="text-xs text-gray-600 truncate">{otherParticipant.company}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 truncate mt-1">{conversation.lastMessage}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-gray-400">{formatTime(conversation.lastMessageTime)}</span>
-                          {conversation.loadId && (
-                            <Badge variant="outline" className="text-xs">
-                              <Package className="h-3 w-3 mr-1" />
-                              {conversation.loadId}
-                            </Badge>
-                          )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge className={getRoleColor(otherParticipant.role)}>{otherParticipant.role}</Badge>
+                            <span className="text-xs text-gray-600 truncate">{otherParticipant.company}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mt-1">{conversation.lastMessage}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-gray-400">{formatTime(conversation.lastMessageTime)}</span>
+                            {conversation.loadId && (
+                              <Badge variant="outline" className="text-xs">
+                                <Package className="h-3 w-3 mr-1" />
+                                {conversation.loadId}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )
               })}
-            </div>
+             </div>
           </CardContent>
         </Card>
 
@@ -274,24 +326,34 @@ export function BrokerMessages() {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto space-y-4 mb-4">
                   {conversationMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.senderId === user?.id ? "justify-end" : "justify-start"} group`}
+                  >
                     <div
-                      key={message.id}
-                      className={`flex ${message.senderId === user?.id ? "justify-end" : "justify-start"}`}
+                      className={`max-w-[70%] p-3 rounded-lg relative ${
+                        message.senderId === user?.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
+                      }`}
                     >
-                      <div
-                        className={`max-w-[70%] p-3 rounded-lg ${
-                          message.senderId === user?.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                        <p
-                          className={`text-xs mt-1 ${message.senderId === user?.id ? "text-blue-100" : "text-gray-500"}`}
+                      {/* Delete button - only show for own messages */}
+                      {message.senderId === user?.id && (
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          title="Delete message"
                         >
-                          {formatTime(message.timestamp)}
-                        </p>
-                      </div>
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                      <p className="text-sm">{message.content}</p>
+                      <p
+                        className={`text-xs mt-1 ${message.senderId === user?.id ? "text-blue-100" : "text-gray-500"}`}
+                      >
+                        {formatTime(message.timestamp)}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                ))}
                 </div>
 
                 {/* Message Input */}
