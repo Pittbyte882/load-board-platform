@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 export async function POST(request: NextRequest) {
   try {
     const messageData = await request.json()
+    
+    console.log('📨 Attempting to send message:', messageData)
 
     const { data: message, error } = await supabase
       .from('messages')
@@ -24,7 +26,12 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ Supabase insert error:', error)
+      throw error
+    }
+
+    console.log('✅ Message sent successfully:', message.id)
 
     // Update conversation timestamp
     await supabase
@@ -34,7 +41,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message })
   } catch (error) {
-    console.error('Error sending message:', error)
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+    console.error('❌ Error sending message:', error)
+    return NextResponse.json({ 
+      error: 'Failed to send message',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

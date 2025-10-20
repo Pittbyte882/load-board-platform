@@ -152,13 +152,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           onClick: () => dispatchBrokerTabChange("messages"),
           badge: notifications > 0 ? notifications.toString() : undefined,
         },
-        {
-          title: "Analytics",
-          icon: TrendingUp,
-          href: "#analytics",
-          isActive: false,
-          onClick: () => dispatchBrokerTabChange("analytics"),
-        },
+        
       ]
     }
 

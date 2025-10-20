@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package, DollarSign, TrendingUp, Calendar, Users, MessageSquare, Truck } from "lucide-react"
+import { DollarSign, TrendingUp, Calendar, Users, MessageSquare, Truck } from "lucide-react"
 import { MyLoads } from "./my-loads"
 import { PostLoadForm } from "./post-load-form"
 import { BrokerProfile } from "./broker-profile"
@@ -199,76 +199,7 @@ export function BrokerDashboard() {
           {/* Load Notifications - NEW SECTION */}
           <LoadNotifications />
           
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? (
-                    <div className="h-8 w-24 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    `$${dashboardData.stats.totalRevenue.toLocaleString()}`
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Loads</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? (
-                    <div className="h-8 w-16 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    dashboardData.stats.activeLoads
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">Currently active</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed Loads</CardTitle>
-                <Truck className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? (
-                    <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    dashboardData.stats.completedLoads
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Rate/Mile</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? (
-                    <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    `$${dashboardData.stats.averageRate.toFixed(2)}`
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">Current average</p>
-              </CardContent>
-            </Card>
-          </div>
+          
 
           {/* Recent Loads */}
           <Card>
