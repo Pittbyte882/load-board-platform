@@ -149,21 +149,23 @@ export function CarrierDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between"> 
-        <div>
-          <h1 className="text-3xl font-bold">Carrier Dashboard</h1>
-          <p className="text-gray-600">
-            Welcome back, {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
-          </p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Carrier Dashboard</h1>
+            <p className="text-gray-600">
+              Welcome back, {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
+            </p>
+          </div>
+          <LogoutButton variant="outline" />
         </div>
-        <div className="flex gap-2">
+        <div className="flex justify-end">
           <Button 
             className="bg-green-600 hover:bg-green-700" 
             onClick={() => setActiveTab("find-loads")}
           >
             Find New Loads
           </Button>
-          <LogoutButton variant="outline" />
         </div>
       </div>
 
