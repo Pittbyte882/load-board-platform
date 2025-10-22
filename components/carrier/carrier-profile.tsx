@@ -1,21 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarInitials } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth-context"
 import { Truck, Mail, Phone, MapPin, Calendar, Star, Edit2, Save, X, Upload, FileText } from "lucide-react"
 import { UserRatings } from "@/components/shared/user-ratings"
+import { ProfileImageUpload } from "@/components/shared/profile-image-upload"
 
 export function CarrierProfile() {
   const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(user?.profileImageUrl || null)
   const [formData, setFormData] = useState({
     name: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || "Mike Johnson" : "Mike Johnson",
     email: user?.email || "mike.johnson@example.com",
@@ -33,6 +34,12 @@ export function CarrierProfile() {
     insuranceCarrier: "Progressive Commercial",
     insuranceExpiry: "2024-12-31",
   })
+
+  useEffect(() => {
+    if (user?.profileImageUrl) {
+      setProfileImageUrl(user.profileImageUrl)
+    }
+  }, [user])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -62,6 +69,10 @@ export function CarrierProfile() {
       insuranceExpiry: "2024-12-31",
     })
     setIsEditing(false)
+  }
+
+  const handleImageUpdate = (imageUrl: string | null) => {
+    setProfileImageUrl(imageUrl)
   }
 
   return (
@@ -97,9 +108,13 @@ export function CarrierProfile() {
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <Avatar className="h-24 w-24">
-                <AvatarInitials name={formData.name} className="text-2xl" />
-              </Avatar>
+              <ProfileImageUpload
+                userId={user?.id || ''}
+                userName={formData.name}
+                currentImageUrl={profileImageUrl || undefined}
+                onImageUpdate={handleImageUpdate}
+                size="xl"
+              />
             </div>
             <CardTitle>{formData.name}</CardTitle>
             <CardDescription>{formData.company}</CardDescription>

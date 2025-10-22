@@ -6,6 +6,7 @@ export interface User {
   role: "carrier" | "broker" | "dispatcher" | "admin"
   companyName: string
   phone: string
+  profileImageUrl?: string
   isActive: boolean
   createdAt: string
   firstLogin?: boolean

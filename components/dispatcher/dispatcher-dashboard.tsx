@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { LogoutButton } from "@/components/shared/logout-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -122,7 +123,7 @@ export function DispatcherDashboard() {
       />
     )
   }
-
+//logout button
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -132,6 +133,7 @@ export function DispatcherDashboard() {
             Welcome back, {`${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User"}
           </p>
         </div>
+        <LogoutButton variant="outline" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

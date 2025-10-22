@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { LogoutButton } from "@/components/shared/logout-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -176,11 +177,14 @@ export function BrokerDashboard() {
             Welcome back, {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
           </p>
         </div>
-        {activeTab !== "my-loads" && (
-        <Button className="bg-green-600 hover:bg-green-700" onClick={handleNavigateToPostLoad}>
-          Post New Load
-        </Button>
-      )}
+        <div className="flex gap-2">
+          {activeTab !== "my-loads" && (
+            <Button className="bg-green-600 hover:bg-green-700" onClick={handleNavigateToPostLoad}>
+              Post New Load
+            </Button>
+          )}
+          <LogoutButton variant="outline" />
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

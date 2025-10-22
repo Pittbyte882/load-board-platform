@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,10 +11,12 @@ import { Avatar, AvatarInitials } from "@/components/ui/avatar"
 import { useAuth } from "@/lib/auth-context"
 import { Building2, Mail, Phone, MapPin, Calendar, Star, Edit2, Save, X } from "lucide-react"
 import { UserRatings } from "@/components/shared/user-ratings"
+import { ProfileImageUpload } from "@/components/shared/profile-image-upload"
 
 export function BrokerProfile() {
   const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(user?.profileImageUrl || null) 
   const [formData, setFormData] = useState({
     name: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || "John Smith" : "John Smith",
     email: user?.email || "john.smith@example.com", 
@@ -26,6 +28,13 @@ export function BrokerProfile() {
     dotNumber: "DOT-987654",
     website: "www.smithlogistics.com",
   })
+//update profile image when user data changes 
+  useEffect(() => {
+    if (user?.profileImageUrl) {
+      setProfileImageUrl(user.profileImageUrl)
+    }
+  }, [user])
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -51,6 +60,9 @@ export function BrokerProfile() {
       website: "www.smithlogistics.com",
     })
     setIsEditing(false)
+  }
+  const handleImageUpdate = (imageUrl: string | null) => {
+    setProfileImageUrl(imageUrl)
   }
 
   return (
@@ -85,10 +97,15 @@ export function BrokerProfile() {
         {/* Profile Overview */}
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
+            {/*  THE AVATAR SECTION  */}
             <div className="flex justify-center mb-4">
-              <Avatar className="h-24 w-24">
-                <AvatarInitials name={formData.name} className="text-2xl" />
-              </Avatar>
+              <ProfileImageUpload
+                userId={user?.id || ''}
+                userName={formData.name}
+                currentImageUrl={profileImageUrl || undefined}
+                onImageUpdate={handleImageUpdate}
+                size="xl"
+              />
             </div>
             <CardTitle>{formData.name}</CardTitle>
             <CardDescription>{formData.company}</CardDescription>

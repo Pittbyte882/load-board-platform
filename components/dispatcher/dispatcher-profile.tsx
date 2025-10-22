@@ -1,18 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Building, MapPin, Phone, Mail, Globe, Users, Truck, Star, Edit, Save, X } from "lucide-react"
 import { UserRatings } from "@/components/shared/user-ratings"
+import { ProfileImageUpload } from "@/components/shared/profile-image-upload"
+import { useAuth } from "@/lib/auth-context"
 
 interface DispatcherProfile {
   id: string
@@ -39,35 +40,43 @@ interface DispatcherProfile {
   }
 }
 
-const mockProfile: DispatcherProfile = {
-  id: "1",
-  name: "Jennifer Martinez",
-  email: "jennifer@dispatchpro.com",
-  phone: "(555) 123-4567",
-  company: "DispatchPro Solutions",
-  title: "Senior Dispatcher",
-  location: "Dallas, TX",
-  website: "www.dispatchpro.com",
-  bio: "Experienced dispatcher with over 8 years in freight logistics. Specializing in box truck and cargo van operations across the Southeast region.",
-  experience: "8+ years",
-  specializations: ["Box Truck Operations", "Cargo Van Logistics", "Regional Distribution", "Last Mile Delivery"],
-  managedCarriers: 25,
-  totalLoads: 1247,
-  rating: 4.9,
-  joinedDate: "2020-03-15",
-  verified: true,
-  notifications: {
-    email: true,
-    sms: true,
-    loadAlerts: true,
-    carrierUpdates: true,
-  },
-}
-
 export function DispatcherProfile() {
-  const [profile, setProfile] = useState<DispatcherProfile>(mockProfile)
+  const { user } = useAuth()
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(user?.profileImageUrl || null)
+  
+  const [profile, setProfile] = useState<DispatcherProfile>({
+    id: user?.id || "1",
+    name: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || "Jennifer Martinez" : "Jennifer Martinez",
+    email: user?.email || "jennifer@dispatchpro.com",
+    phone: user?.phone || "(555) 123-4567",
+    company: user?.companyName || "DispatchPro Solutions",
+    title: "Senior Dispatcher",
+    location: "Dallas, TX",
+    website: "www.dispatchpro.com",
+    bio: "Experienced dispatcher with over 8 years in freight logistics. Specializing in box truck and cargo van operations across the Southeast region.",
+    experience: "8+ years",
+    specializations: ["Box Truck Operations", "Cargo Van Logistics", "Regional Distribution", "Last Mile Delivery"],
+    managedCarriers: 25,
+    totalLoads: 1247,
+    rating: 4.9,
+    joinedDate: "2020-03-15",
+    verified: true,
+    notifications: {
+      email: true,
+      sms: true,
+      loadAlerts: true,
+      carrierUpdates: true,
+    },
+  })
+  
   const [isEditing, setIsEditing] = useState(false)
-  const [editedProfile, setEditedProfile] = useState<DispatcherProfile>(mockProfile)
+  const [editedProfile, setEditedProfile] = useState<DispatcherProfile>(profile)
+
+  useEffect(() => {
+    if (user?.profileImageUrl) {
+      setProfileImageUrl(user.profileImageUrl)
+    }
+  }, [user])
 
   const handleSave = () => {
     setProfile(editedProfile)
@@ -87,6 +96,10 @@ export function DispatcherProfile() {
         [key]: value,
       },
     })
+  }
+
+  const handleImageUpdate = (imageUrl: string | null) => {
+    setProfileImageUrl(imageUrl)
   }
 
   return (
@@ -129,10 +142,13 @@ export function DispatcherProfile() {
             <Card className="lg:col-span-1">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={`/placeholder_svg.png?height=96&width=96&text=${profile.name.charAt(0)}`} />
-                    <AvatarFallback className="text-2xl">{profile.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <ProfileImageUpload
+                    userId={user?.id || profile.id}
+                    userName={profile.name}
+                    currentImageUrl={profileImageUrl || undefined}
+                    onImageUpdate={handleImageUpdate}
+                    size="xl"
+                  />
                 </div>
                 <CardTitle className="text-xl">{profile.name}</CardTitle>
                 <CardDescription>{profile.title}</CardDescription>
