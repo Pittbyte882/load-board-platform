@@ -1,521 +1,924 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { useAuth } from "@/lib/auth-context"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Trash2, Phone, Mail, MapPin, Truck, Star, Loader2 } from "lucide-react"
+import { 
+  Truck, 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  Phone, 
+  MapPin, 
+  Building, 
+  User,
+  RefreshCw,
+  AlertCircle
+} from "lucide-react"
 
 interface Carrier {
   id: string
-  name: string
-  email: string
-  phone: string
-  company: string
-  equipmentType: string
-  location: string
-  mcNumber: string
-  dotNumber: string
-  rating: number
-  completedLoads: number
-  status: "active" | "inactive"
-  joinedDate: string
-  lastActive: string
+  dispatcher_id: string
+  carrier_name: string
+  company_name: string
+  home_city: string
+  home_state: string
+  mc_number: string
+  dot_number: string
+  company_phone: string
+  cell_phone: string
+  equipment_type: string
+  status: string
+  created_at: string
+  updated_at: string
 }
 
-const API_BASE_URL = '/api/carrier/manage-carriers'
+const EQUIPMENT_TYPES = [
+  "Sprinter Van",
+  "26' Box Truck",
+  "20' Box Truck",
+  "16' Box Truck",
+  "Reefer Box Truck"
+]
 
 export function ManageCarriers() {
+  const { user } = useAuth()
   const [carriers, setCarriers] = useState<Carrier[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Fetch carriers on component mount
+  // Form state
+  const [formData, setFormData] = useState({
+    carrier_name: "",
+    company_name: "",
+    home_city: "",
+    home_state: "",
+    mc_number: "",
+    dot_number: "",
+    company_phone: "",
+    cell_phone: "",
+    equipment_type: ""
+  })
+
   useEffect(() => {
-    fetchCarriers()
-  }, [])
+    if (user) {
+      fetchCarriers()
+    }
+  }, [user])
 
   const fetchCarriers = async () => {
-  try {
     setIsLoading(true)
-    setError(null)
-    const response = await fetch('/api/carrier/manage-carriers', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch carriers')
-    }
-    
-    const data = await response.json()
-    // Map snake_case to camelCase
-    const mappedCarriers = (data.carriers || []).map((carrier: any) => ({
-      id: carrier.id,
-      name: carrier.name,
-      email: carrier.email,
-      phone: carrier.phone,
-      company: carrier.company,
-      equipmentType: carrier.equipment_type,
-      location: carrier.location,
-      mcNumber: carrier.mc_number,
-      dotNumber: carrier.dot_number,
-      rating: carrier.rating,
-      completedLoads: carrier.completed_loads,
-      status: carrier.status,
-      joinedDate: carrier.joined_date,
-      lastActive: carrier.last_active,
-    }))
-    setCarriers(mappedCarriers)
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Failed to load carriers')
-    console.error('Error fetching carriers:', err)
-    setCarriers([])
-  } finally {
-    setIsLoading(false)
-  }
-}
-
-  const filteredCarriers = carriers.filter(
-    (carrier) =>
-      carrier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      carrier.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      carrier.location.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const handleAddCarrier = async (carrierData: Partial<Carrier>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}`, {
-        method: 'POST',
+      const response = await fetch("/api/dispatcher/carriers", {
+        cache: "no-store",
         headers: {
-          'Content-Type': 'application/json',
+          "Cache-Control": "no-cache",
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...carrierData,
-          rating: 0,
-          completedLoads: 0,
-          status: 'active',
-          joinedDate: new Date().toISOString().split('T')[0],
-          lastActive: new Date().toISOString(),
-        }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to add carrier')
+      if (response.ok) {
+        const data = await response.json()
+        setCarriers(data)
+      } else {
+        console.error("Failed to fetch carriers:", response.status)
       }
-
-      const newCarrier = await response.json()
-      setCarriers([...carriers, newCarrier])
-      setIsAddDialogOpen(false)
-    } catch (err) {
-      console.error('Error adding carrier:', err)
-      alert('Failed to add carrier. Please try again.')
+    } catch (error) {
+      console.error("Error fetching carriers:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleEditCarrier = async (carrierData: Partial<Carrier>) => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.carrier_name.trim()) {
+      newErrors.carrier_name = "Carrier name is required"
+    }
+    if (!formData.company_name.trim()) {
+      newErrors.company_name = "Company name is required"
+    }
+    if (!formData.home_city.trim()) {
+      newErrors.home_city = "City is required"
+    }
+    if (!formData.home_state.trim()) {
+      newErrors.home_state = "State is required"
+    }
+    if (!formData.mc_number.trim()) {
+      newErrors.mc_number = "MC# is required"
+    }
+    if (!formData.dot_number.trim()) {
+      newErrors.dot_number = "DOT# is required"
+    }
+    if (!formData.company_phone.trim()) {
+      newErrors.company_phone = "Company phone is required"
+    }
+    if (!formData.cell_phone.trim()) {
+      newErrors.cell_phone = "Cell phone is required"
+    }
+    if (!formData.equipment_type) {
+      newErrors.equipment_type = "Equipment type is required"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const resetForm = () => {
+    setFormData({
+      carrier_name: "",
+      company_name: "",
+      home_city: "",
+      home_state: "",
+      mc_number: "",
+      dot_number: "",
+      company_phone: "",
+      cell_phone: "",
+      equipment_type: ""
+    })
+    setErrors({})
+  }
+
+  const handleAddCarrier = async () => {
+    if (!validateForm()) return
+
+    setIsSaving(true)
+    try {
+      const response = await fetch("/api/dispatcher/carriers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      })
+
+      if (response.ok) {
+        await fetchCarriers()
+        setIsAddDialogOpen(false)
+        resetForm()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to add carrier")
+      }
+    } catch (error) {
+      console.error("Error adding carrier:", error)
+      alert("An error occurred while adding the carrier")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleEditCarrier = async () => {
+    if (!validateForm() || !selectedCarrier) return
+
+    setIsSaving(true)
+    try {
+      const response = await fetch(`/api/dispatcher/carriers/${selectedCarrier.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      })
+
+      if (response.ok) {
+        await fetchCarriers()
+        setIsEditDialogOpen(false)
+        setSelectedCarrier(null)
+        resetForm()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to update carrier")
+      }
+    } catch (error) {
+      console.error("Error updating carrier:", error)
+      alert("An error occurred while updating the carrier")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteCarrier = async () => {
     if (!selectedCarrier) return
 
+    setIsSaving(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/${selectedCarrier.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(carrierData),
+      const response = await fetch(`/api/dispatcher/carriers/${selectedCarrier.id}`, {
+        method: "DELETE"
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to update carrier')
+      if (response.ok) {
+        await fetchCarriers()
+        setIsDeleteDialogOpen(false)
+        setSelectedCarrier(null)
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to delete carrier")
       }
-
-      const updatedCarrier = await response.json()
-      const updatedCarriers = carriers.map((carrier) =>
-        carrier.id === selectedCarrier.id ? updatedCarrier : carrier,
-      )
-      setCarriers(updatedCarriers)
-      setIsEditDialogOpen(false)
-      setSelectedCarrier(null)
-    } catch (err) {
-      console.error('Error updating carrier:', err)
-      alert('Failed to update carrier. Please try again.')
+    } catch (error) {
+      console.error("Error deleting carrier:", error)
+      alert("An error occurred while deleting the carrier")
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleDeleteCarrier = async (carrierId: string) => {
-    if (!confirm('Are you sure you want to delete this carrier?')) {
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/${carrierId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete carrier')
-      }
-
-      setCarriers(carriers.filter((carrier) => carrier.id !== carrierId))
-    } catch (err) {
-      console.error('Error deleting carrier:', err)
-      alert('Failed to delete carrier. Please try again.')
-    }
+  const openEditDialog = (carrier: Carrier) => {
+    setSelectedCarrier(carrier)
+    setFormData({
+      carrier_name: carrier.carrier_name,
+      company_name: carrier.company_name,
+      home_city: carrier.home_city,
+      home_state: carrier.home_state,
+      mc_number: carrier.mc_number,
+      dot_number: carrier.dot_number,
+      company_phone: carrier.company_phone,
+      cell_phone: carrier.cell_phone,
+      equipment_type: carrier.equipment_type
+    })
+    setIsEditDialogOpen(true)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800"
-      case "inactive":
-        return "bg-gray-100 text-gray-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
+  const openDeleteDialog = (carrier: Carrier) => {
+    setSelectedCarrier(carrier)
+    setIsDeleteDialogOpen(true)
   }
 
-  if (isLoading) {
+  const filteredCarriers = carriers.filter((carrier) => {
+    const search = searchTerm.toLowerCase()
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading carriers...</p>
-        </div>
-      </div>
+      carrier.carrier_name.toLowerCase().includes(search) ||
+      carrier.company_name.toLowerCase().includes(search) ||
+      carrier.mc_number.toLowerCase().includes(search) ||
+      carrier.equipment_type.toLowerCase().includes(search) ||
+      `${carrier.home_city} ${carrier.home_state}`.toLowerCase().includes(search)
     )
-  }
+  })
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md">
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-red-600 text-xl mb-4">⚠️</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Carriers</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={fetchCarriers} className="bg-green-600 hover:bg-green-700">
-                Try Again
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const getEquipmentIcon = (type: string) => {
+    return <Truck className="h-4 w-4" />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manage Carriers</h1>
-          <p className="text-gray-600">Add, edit, and manage your carrier network</p>
+          <h2 className="text-2xl font-bold">Manage Carriers</h2>
+          <p className="text-gray-600">Add and manage carriers in your fleet</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Carrier
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Carrier</DialogTitle>
-              <DialogDescription>Add a new carrier to your managed fleet</DialogDescription>
-            </DialogHeader>
-            <CarrierForm onSubmit={handleAddCarrier} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex space-x-2">
+          <Button onClick={fetchCarriers} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Carrier
+          </Button>
+        </div>
       </div>
 
-      <div className="flex gap-4 items-center">
-        <div className="flex-1">
+      {/* Search */}
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search carriers by name, company, or location..."
+            placeholder="Search by name, company, MC#, equipment, or location..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md"
+            className="pl-10"
           />
         </div>
-        <Button variant="outline" onClick={fetchCarriers}>
-          <Loader2 className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
       </div>
 
-      <div className="grid gap-6">
-        {filteredCarriers.map((carrier) => (
-          <Card key={carrier.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={`/placeholder-icon.png?height=48&width=48&text=${carrier.name.charAt(0)}`} />
-                    <AvatarFallback>{carrier.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-2">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{carrier.name}</h3>
-                      <p className="text-sm text-gray-600">{carrier.company}</p>
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-1" />
-                        {carrier.phone}
-                      </div>
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 mr-1" />
-                        {carrier.email}
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {carrier.location}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm">
-                      <div className="flex items-center">
-                        <Truck className="h-4 w-4 mr-1 text-gray-500" />
-                        <span>{carrier.equipmentType}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 mr-1 text-yellow-500 fill-current" />
-                        <span>
-                          {carrier.rating.toFixed(1)} ({carrier.completedLoads} loads)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={getStatusColor(carrier.status)}>{carrier.status}</Badge>
-                  <Dialog
-                    open={isEditDialogOpen && selectedCarrier?.id === carrier.id}
-                    onOpenChange={(open) => {
-                      setIsEditDialogOpen(open)
-                      if (!open) setSelectedCarrier(null)
-                    }}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={() => setSelectedCarrier(carrier)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit Carrier</DialogTitle>
-                        <DialogDescription>Update carrier information</DialogDescription>
-                      </DialogHeader>
-                      <CarrierForm initialData={selectedCarrier} onSubmit={handleEditCarrier} />
-                    </DialogContent>
-                  </Dialog>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteCarrier(carrier.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredCarriers.length === 0 && (
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-12 text-center">
-            <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No carriers found</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm ? "No carriers match your search criteria." : "Start by adding your first carrier."}
-            </p>
-            {!searchTerm && (
-              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Your First Carrier
-              </Button>
-            )}
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Total Carriers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{carriers.length}</div>
+            <p className="text-xs text-gray-500 mt-1">Active carriers in fleet</p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Equipment Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {new Set(carriers.map(c => c.equipment_type)).size}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Different equipment types</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Locations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {new Set(carriers.map(c => `${c.home_city}, ${c.home_state}`)).size}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Unique home bases</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Carriers List */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredCarriers.length === 0 ? (
+        <Card>
+          <CardContent className="p-12">
+            <div className="text-center">
+              <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {carriers.length === 0 ? "No Carriers Yet" : "No Results Found"}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {carriers.length === 0
+                  ? "Start building your fleet by adding your first carrier."
+                  : "Try adjusting your search terms."}
+              </p>
+              {carriers.length === 0 && (
+                <Button onClick={() => setIsAddDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Carrier
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredCarriers.map((carrier) => (
+            <Card key={carrier.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg">
+                          <Truck className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{carrier.carrier_name}</h3>
+                          <p className="text-sm text-gray-600">{carrier.company_name}</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800" variant="secondary">
+                        {carrier.equipment_type}
+                      </Badge>
+                    </div>
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-3 border-t">
+                      <div className="flex items-start space-x-2">
+                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-xs text-gray-500">Home Base</div>
+                          <div className="font-medium text-sm">
+                            {carrier.home_city}, {carrier.home_state}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start space-x-2">
+                        <Building className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-xs text-gray-500">MC# / DOT#</div>
+                          <div className="font-medium text-sm">
+                            {carrier.mc_number} / {carrier.dot_number}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start space-x-2">
+                        <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-xs text-gray-500">Company Phone</div>
+                          <div className="font-medium text-sm">{carrier.company_phone}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start space-x-2">
+                        <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-xs text-gray-500">Cell Phone</div>
+                          <div className="font-medium text-sm">{carrier.cell_phone}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Added Date */}
+                    <div className="pt-2 text-xs text-gray-500">
+                      Added: {new Date(carrier.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col space-y-2 ml-4">
+                    <Button
+                      onClick={() => openEditDialog(carrier)}
+                      size="sm"
+                      variant="outline"
+                      className="w-20"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => openDeleteDialog(carrier)}
+                      size="sm"
+                      variant="outline"
+                      className="w-20 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
-    </div>
-  )
-}
 
-function CarrierForm({
-  initialData,
-  onSubmit,
-}: {
-  initialData?: Carrier | null
-  onSubmit: (data: Partial<Carrier>) => void
-}) {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || "",
-    email: initialData?.email || "",
-    phone: initialData?.phone || "",
-    company: initialData?.company || "",
-    equipmentType: initialData?.equipmentType || "Box Truck",
-    location: initialData?.location || "",
-    mcNumber: initialData?.mcNumber || "",
-    dotNumber: initialData?.dotNumber || "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+      {/* Add Carrier Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Carrier</DialogTitle>
+            <DialogDescription>Enter the carrier's information to add them to your fleet</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Personal Information</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="carrier_name">
+                    Carrier's Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="carrier_name"
+                    value={formData.carrier_name}
+                    onChange={(e) => setFormData({ ...formData, carrier_name: e.target.value })}
+                    placeholder="John Doe"
+                  />
+                  {errors.carrier_name && (
+                    <p className="text-xs text-red-500 mt-1">{errors.carrier_name}</p>
+                  )}
+                </div>
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    try {
-      await onSubmit(formData)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+                <div>
+                  <Label htmlFor="company_name">
+                    Company Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="company_name"
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                    placeholder="ABC Trucking LLC"
+                  />
+                  {errors.company_name && (
+                    <p className="text-xs text-red-500 mt-1">{errors.company_name}</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-        <div>
-          <Label htmlFor="company">Company</Label>
-          <Input
-            id="company"
-            value={formData.company}
-            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-      </div>
+            {/* Location */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Home Base Location</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="home_city">
+                    City <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="home_city"
+                    value={formData.home_city}
+                    onChange={(e) => setFormData({ ...formData, home_city: e.target.value })}
+                    placeholder="Los Angeles"
+                  />
+                  {errors.home_city && (
+                    <p className="text-xs text-red-500 mt-1">{errors.home_city}</p>
+                  )}
+                </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-      </div>
+                <div>
+                  <Label htmlFor="home_state">
+                    State <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="home_state"
+                    value={formData.home_state}
+                    onChange={(e) => setFormData({ ...formData, home_state: e.target.value })}
+                    placeholder="CA"
+                    maxLength={2}
+                  />
+                  {errors.home_state && (
+                    <p className="text-xs text-red-500 mt-1">{errors.home_state}</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="mcNumber">MC Number</Label>
-          <Input
-            id="mcNumber"
-            placeholder="MC-123456"
-            value={formData.mcNumber}
-            onChange={(e) => setFormData({ ...formData, mcNumber: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-        <div>
-          <Label htmlFor="dotNumber">DOT Number</Label>
-          <Input
-            id="dotNumber"
-            placeholder="DOT-123456"
-            value={formData.dotNumber}
-            onChange={(e) => setFormData({ ...formData, dotNumber: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-      </div>
+            {/* Authority Numbers */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Authority Numbers</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="mc_number">
+                    MC# <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="mc_number"
+                    value={formData.mc_number}
+                    onChange={(e) => setFormData({ ...formData, mc_number: e.target.value })}
+                    placeholder="MC123456"
+                  />
+                  {errors.mc_number && (
+                    <p className="text-xs text-red-500 mt-1">{errors.mc_number}</p>
+                  )}
+                </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            placeholder="City, State"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-        <div>
-          <Label htmlFor="equipmentType">Equipment Type</Label>
-          <Select
-            value={formData.equipmentType}
-            onValueChange={(value) => setFormData({ ...formData, equipmentType: value })}
-            disabled={isSubmitting}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Box Truck">Box Truck</SelectItem>
-              <SelectItem value="Cargo Van">Cargo Van</SelectItem>
-              <SelectItem value="Sprinter Van">Sprinter Van</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+                <div>
+                  <Label htmlFor="dot_number">
+                    DOT# <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="dot_number"
+                    value={formData.dot_number}
+                    onChange={(e) => setFormData({ ...formData, dot_number: e.target.value })}
+                    placeholder="DOT123456"
+                  />
+                  {errors.dot_number && (
+                    <p className="text-xs text-red-500 mt-1">{errors.dot_number}</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button 
-          onClick={handleSubmit} 
-          className="bg-green-600 hover:bg-green-700"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {initialData ? "Updating..." : "Adding..."}
-            </>
-          ) : (
-            <>{initialData ? "Update Carrier" : "Add Carrier"}</>
+            {/* Contact Information */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Contact Information</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="company_phone">
+                    Company Phone <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="company_phone"
+                    value={formData.company_phone}
+                    onChange={(e) => setFormData({ ...formData, company_phone: e.target.value })}
+                    placeholder="(555) 123-4567"
+                  />
+                  {errors.company_phone && (
+                    <p className="text-xs text-red-500 mt-1">{errors.company_phone}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="cell_phone">
+                    Cell Phone <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="cell_phone"
+                    value={formData.cell_phone}
+                    onChange={(e) => setFormData({ ...formData, cell_phone: e.target.value })}
+                    placeholder="(555) 987-6543"
+                  />
+                  {errors.cell_phone && (
+                    <p className="text-xs text-red-500 mt-1">{errors.cell_phone}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Equipment */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Equipment</h4>
+              
+              <div>
+                <Label htmlFor="equipment_type">
+                  Equipment Type <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.equipment_type}
+                  onValueChange={(value) => setFormData({ ...formData, equipment_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select equipment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EQUIPMENT_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.equipment_type && (
+                  <p className="text-xs text-red-500 mt-1">{errors.equipment_type}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsAddDialogOpen(false)
+              resetForm()
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddCarrier}
+              disabled={isSaving}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isSaving ? "Adding..." : "Add Carrier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Carrier Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Carrier</DialogTitle>
+            <DialogDescription>Update the carrier's information</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Same form fields as Add Dialog */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Personal Information</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_carrier_name">
+                    Carrier's Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_carrier_name"
+                    value={formData.carrier_name}
+                    onChange={(e) => setFormData({ ...formData, carrier_name: e.target.value })}
+                    placeholder="John Doe"
+                  />
+                  {errors.carrier_name && (
+                    <p className="text-xs text-red-500 mt-1">{errors.carrier_name}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_company_name">
+                    Company Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_company_name"
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                    placeholder="ABC Trucking LLC"
+                  />
+                  {errors.company_name && (
+                    <p className="text-xs text-red-500 mt-1">{errors.company_name}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Home Base Location</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_home_city">
+                    City <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_home_city"
+                    value={formData.home_city}
+                    onChange={(e) => setFormData({ ...formData, home_city: e.target.value })}
+                    placeholder="Los Angeles"
+                  />
+                  {errors.home_city && (
+                    <p className="text-xs text-red-500 mt-1">{errors.home_city}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_home_state">
+                    State <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_home_state"
+                    value={formData.home_state}
+                    onChange={(e) => setFormData({ ...formData, home_state: e.target.value })}
+                    placeholder="CA"
+                    maxLength={2}
+                  />
+                  {errors.home_state && (
+                    <p className="text-xs text-red-500 mt-1">{errors.home_state}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Authority Numbers</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_mc_number">
+                    MC# <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_mc_number"
+                    value={formData.mc_number}
+                    onChange={(e) => setFormData({ ...formData, mc_number: e.target.value })}
+                    placeholder="MC123456"
+                  />
+                  {errors.mc_number && (
+                    <p className="text-xs text-red-500 mt-1">{errors.mc_number}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_dot_number">
+                    DOT# <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_dot_number"
+                    value={formData.dot_number}
+                    onChange={(e) => setFormData({ ...formData, dot_number: e.target.value })}
+                    placeholder="DOT123456"
+                  />
+                  {errors.dot_number && (
+                    <p className="text-xs text-red-500 mt-1">{errors.dot_number}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Contact Information</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_company_phone">
+                    Company Phone <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_company_phone"
+                    value={formData.company_phone}
+                    onChange={(e) => setFormData({ ...formData, company_phone: e.target.value })}
+                    placeholder="(555) 123-4567"
+                  />
+                  {errors.company_phone && (
+                    <p className="text-xs text-red-500 mt-1">{errors.company_phone}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_cell_phone">
+                    Cell Phone <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit_cell_phone"
+                    value={formData.cell_phone}
+                    onChange={(e) => setFormData({ ...formData, cell_phone: e.target.value })}
+                    placeholder="(555) 987-6543"
+                  />
+                  {errors.cell_phone && (
+                    <p className="text-xs text-red-500 mt-1">{errors.cell_phone}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-700">Equipment</h4>
+              
+              <div>
+                <Label htmlFor="edit_equipment_type">
+                  Equipment Type <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.equipment_type}
+                  onValueChange={(value) => setFormData({ ...formData, equipment_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select equipment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EQUIPMENT_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.equipment_type && (
+                  <p className="text-xs text-red-500 mt-1">{errors.equipment_type}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false)
+              setSelectedCarrier(null)
+              resetForm()
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditCarrier}
+              disabled={isSaving}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSaving ? "Updating..." : "Update Carrier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Carrier</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this carrier? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedCarrier && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 my-4">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-red-900">{selectedCarrier.carrier_name}</p>
+                  <p className="text-sm text-red-700">{selectedCarrier.company_name}</p>
+                  <p className="text-sm text-red-700">{selectedCarrier.equipment_type}</p>
+                </div>
+              </div>
+            </div>
           )}
-        </Button>
-      </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsDeleteDialogOpen(false)
+              setSelectedCarrier(null)
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteCarrier}
+              disabled={isSaving}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isSaving ? "Deleting..." : "Delete Carrier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

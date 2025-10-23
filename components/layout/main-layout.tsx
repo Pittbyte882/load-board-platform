@@ -346,7 +346,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </Avatar>
                     <div className="flex flex-col items-start text-left">
                       <span className="text-sm font-medium">{user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || "User" : "User"}</span> 
-                      // handles if first or last name is missing // 
+                      
                       <Badge className={`text-xs ${getRoleColor(user?.role || "")}`}>{user?.role}</Badge>
                     </div>
                   </SidebarMenuButton>

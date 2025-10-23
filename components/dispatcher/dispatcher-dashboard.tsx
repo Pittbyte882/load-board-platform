@@ -5,12 +5,13 @@ import { LogoutButton } from "@/components/shared/logout-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Package, DollarSign, TrendingUp, Truck, Star } from "lucide-react"
+import { Users, Package, Truck } from "lucide-react"
 import { ManageCarriers } from "./manage-carriers"
 import { DispatcherLoadBoard } from "./dispatcher-load-board"
 import { DispatcherMessages } from "./dispatcher-messages"
 import { DispatcherProfile } from "./dispatcher-profile"
 import { DispatcherSupport } from "./dispatcher-support"
+import { DispatcherBookedLoads } from "./dispatcher-booked-loads"
 import { WelcomeNewUser } from "../dashboard/welcome-new-user"
 import { useAuth } from "@/lib/auth-context"
 
@@ -79,7 +80,7 @@ export function DispatcherDashboard() {
     window.addEventListener("dashboardTabChange", handleTabChange as EventListener)
     if (window.location.hash) {
       const tab = window.location.hash.substring(1)
-      if (["dashboard", "carriers", "loads", "route-planning", "support", "messages", "profile"].includes(tab)) {
+      if (["dashboard", "carriers", "loads", "booked-loads", "route-planning", "support", "messages", "profile"].includes(tab)) {
         setActiveTab(tab)
       }
     }
@@ -123,7 +124,7 @@ export function DispatcherDashboard() {
       />
     )
   }
-//logout button
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -137,9 +138,10 @@ export function DispatcherDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="carriers">Manage Carriers</TabsTrigger>
+          <TabsTrigger value="booked-loads">Booked Loads</TabsTrigger>
           <TabsTrigger value="loads">Find Loads</TabsTrigger>
           <TabsTrigger value="route-planning">Route Planning</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
@@ -149,7 +151,7 @@ export function DispatcherDashboard() {
 
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="flex justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Total Carriers</CardTitle>
@@ -173,32 +175,6 @@ export function DispatcherDashboard() {
                   {loading ? "--" : dashboardData.stats.activeLoads}
                 </div>
                 <p className="text-xs text-muted-foreground">Currently dispatched</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "--" : `$${dashboardData.stats.totalRevenue.toLocaleString()}`}
-                </div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Avg Load Value</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "--" : `$${dashboardData.stats.avgLoadValue}`}
-                </div>
-                <p className="text-xs text-muted-foreground">Per load</p>
               </CardContent>
             </Card>
           </div>
@@ -283,6 +259,10 @@ export function DispatcherDashboard() {
 
         <TabsContent value="carriers">
           <ManageCarriers />
+        </TabsContent>
+
+        <TabsContent value="booked-loads">
+          <DispatcherBookedLoads />
         </TabsContent>
 
         <TabsContent value="loads">
