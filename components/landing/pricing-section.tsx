@@ -122,7 +122,7 @@ export function PricingSection() {
               For Dispatchers
             </TabsTrigger>
           </TabsList>
-
+                        {/* Carrier Monthly Plan */}
           <TabsContent value="carriers" className="space-y-8">
             {(() => {
               const plan = getPlanByUserType("carrier")
@@ -134,7 +134,7 @@ export function PricingSection() {
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                       <Badge className="bg-green-600 text-white px-4 py-1">
                         <Star className="h-3 w-3 mr-1" />
-                        Most Popular
+                        Boxaloo
                       </Badge>
                     </div>
 
@@ -205,8 +205,8 @@ export function PricingSection() {
               )
             })()}
           </TabsContent>
-
-          <TabsContent value="brokers" className="space-y-8">
+                      {/* Broker Monthly Plan */}
+          <TabsContent value="brokers" className="space-y-8"> 
             {(() => {
               const plan = getPlanByUserType("broker")
               if (!plan) return null
@@ -217,7 +217,7 @@ export function PricingSection() {
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                       <Badge className="bg-blue-600 text-white px-4 py-1">
                         <Star className="h-3 w-3 mr-1" />
-                        Professional Choice
+                        Boxaloo
                       </Badge>
                     </div>
 
@@ -288,7 +288,7 @@ export function PricingSection() {
               )
             })()}
           </TabsContent>
-
+                      {/* Dispatcher Monthly Plan */}
           <TabsContent value="dispatchers" className="space-y-8">
             {(() => {
               const plan = getPlanByUserType("dispatcher")
@@ -300,7 +300,7 @@ export function PricingSection() {
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                       <Badge className="bg-purple-600 text-white px-4 py-1">
                         <Star className="h-3 w-3 mr-1" />
-                        Fleet Favorite
+                        Boxaloo
                       </Badge>
                     </div>
 

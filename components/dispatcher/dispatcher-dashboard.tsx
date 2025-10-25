@@ -10,6 +10,7 @@ import { ManageCarriers } from "./manage-carriers"
 import { DispatcherLoadBoard } from "./dispatcher-load-board"
 import { DispatcherMessages } from "./dispatcher-messages"
 import { DispatcherProfile } from "./dispatcher-profile"
+import { SubscriptionCard } from "@/components/shared/subscription-card"
 import { DispatcherSupport } from "./dispatcher-support"
 import { DispatcherBookedLoads } from "./dispatcher-booked-loads"
 import { WelcomeNewUser } from "../dashboard/welcome-new-user"
@@ -146,7 +147,8 @@ export function DispatcherDashboard() {
           <TabsTrigger value="route-planning">Route Planning</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          
         </TabsList>
 
         {/* Dashboard Tab */}
@@ -291,6 +293,10 @@ export function DispatcherDashboard() {
           <DispatcherMessages />
         </TabsContent>
 
+                <TabsContent value="subscription">
+                <SubscriptionCard userType="dispatcher" userId={user?.id} />
+              </TabsContent>
+              
         <TabsContent value="profile">
           <DispatcherProfile />
         </TabsContent>

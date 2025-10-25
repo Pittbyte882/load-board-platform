@@ -14,7 +14,7 @@ import { BookedLoads } from "./booked-loads"
 import { PostTruck } from "./post-truck"
 import { CarrierSupport } from "./carrier-support"
 import { CarrierMessages } from "./carrier-messages"
-import { CarrierSettings } from "./carrier-settings"
+import { SubscriptionCard } from "@/components/shared/subscription-card"
 import { WelcomeNewUser } from "../dashboard/welcome-new-user"
 import { useAuth } from "@/lib/auth-context"
 
@@ -170,7 +170,7 @@ export function CarrierDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="find-loads">Find Loads</TabsTrigger>
           <TabsTrigger value="booked-loads">Booked Loads</TabsTrigger>
@@ -178,6 +178,7 @@ export function CarrierDashboard() {
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -405,8 +406,8 @@ export function CarrierDashboard() {
           <CarrierProfile />
         </TabsContent>
 
-        <TabsContent value="settings">
-          <CarrierSettings />
+        <TabsContent value="subscription">
+          <SubscriptionCard userType="carrier" userId={user?.id} />
         </TabsContent>
       </Tabs>
     </div>

@@ -14,6 +14,7 @@ import { BrokerSettings } from "./broker-settings"
 import { BrokerMessages } from "./broker-messages"
 import { AvailableTrucks } from "./available-trucks"
 import { BrokerSupport } from "./broker-support"
+import { SubscriptionCard } from "@/components/shared/subscription-card"
 import { WelcomeNewUser } from "../dashboard/welcome-new-user"
 import { useAuth } from "@/lib/auth-context"
 import { LoadNotifications } from "@/components/broker/load-notifications"
@@ -198,6 +199,7 @@ export function BrokerDashboard() {
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -289,6 +291,10 @@ export function BrokerDashboard() {
 
         <TabsContent value="profile">
           <BrokerProfile />
+        </TabsContent>
+
+        <TabsContent value="subscription">
+          <SubscriptionCard userType="broker" userId={user?.id} />
         </TabsContent>
 
         <TabsContent value="settings">
