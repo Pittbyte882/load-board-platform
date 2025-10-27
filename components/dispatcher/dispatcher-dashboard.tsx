@@ -140,7 +140,7 @@ export function DispatcherDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="flex w-full flex-wrap gap-2">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="carriers">Manage Carriers</TabsTrigger>
           <TabsTrigger value="booked-loads">Booked Loads</TabsTrigger>
