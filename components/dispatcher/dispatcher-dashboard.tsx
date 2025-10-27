@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/shared/logout-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PostTruck } from "./post-truck"
 import { Users, Package, Truck } from "lucide-react"
 import { ManageCarriers } from "./manage-carriers"
 import { DispatcherLoadBoard } from "./dispatcher-load-board"
@@ -139,11 +140,12 @@ export function DispatcherDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="carriers">Manage Carriers</TabsTrigger>
           <TabsTrigger value="booked-loads">Booked Loads</TabsTrigger>
           <TabsTrigger value="loads">Find Loads</TabsTrigger>
+          <TabsTrigger value="post-truck">Post Truck</TabsTrigger>
           <TabsTrigger value="route-planning">Route Planning</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -299,6 +301,10 @@ export function DispatcherDashboard() {
               
         <TabsContent value="profile">
           <DispatcherProfile />
+        </TabsContent>
+
+        <TabsContent value="post-truck">
+          <PostTruck />
         </TabsContent>
       </Tabs>
     </div>

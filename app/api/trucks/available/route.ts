@@ -7,9 +7,12 @@ export async function GET() {
       .from('trucks')
       .select('*')
       .eq('status', 'available')
-      .order('created_at', { ascending: false })
+      .gte('available_date', new Date().toISOString().split('T')[0]) // Only future/today dates
+      .order('posted_date', { ascending: false })
     
     if (error) throw error
+
+    console.log(`✅ Fetched ${data?.length || 0} available trucks`)
     
     return NextResponse.json(data || [])
   } catch (error) {

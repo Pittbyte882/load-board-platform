@@ -27,31 +27,52 @@ export function AvailableTrucks() {
   }, [trucks, searchTerm, stateFilter, truckTypeFilter])
 
   const fetchAvailableTrucks = async () => {
-    setIsLoading(true)
-    try {
-      console.log("Fetching available trucks...")
-      const response = await fetch("/api/trucks/available", {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      })
+  setIsLoading(true)
+  try {
+    console.log("Fetching available trucks...")
+    const response = await fetch("/api/trucks/available", {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    })
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Fetched available trucks:", data)
-        setTrucks(data)
-      } else {
-        console.error("Failed to fetch available trucks:", response.status, response.statusText)
-      }
-    } catch (error) {
-      console.error("Error fetching available trucks:", error)
-    } finally {
-      setIsLoading(false)
+    if (response.ok) {
+      const data = await response.json()
+      console.log("Raw data from API:", data)
+      
+      // Map snake_case from database to camelCase for component
+      const mappedTrucks = data.map((truck: any) => ({
+        id: truck.id,
+        carrierId: truck.carrier_id,
+        carrierName: truck.carrier_name,
+        carrierCompany: truck.carrier_company,
+        equipmentType: truck.equipment_type,
+        availableDate: truck.available_date,
+        city: truck.city,
+        state: truck.state,
+        capacity: truck.capacity,
+        dotNumber: truck.dot_number,
+        mcNumber: truck.mc_number,
+        specialEquipment: truck.special_equipment || [],
+        description: truck.description,
+        phone: truck.phone,
+        status: truck.status,
+        postedDate: truck.posted_date,
+      }))
+      
+      console.log("Mapped trucks:", mappedTrucks)
+      setTrucks(mappedTrucks)
+    } else {
+      console.error("Failed to fetch available trucks:", response.status, response.statusText)
     }
+  } catch (error) {
+    console.error("Error fetching available trucks:", error)
+  } finally {
+    setIsLoading(false)
   }
-
+}
   const filterTrucks = () => {
     let filtered = trucks
 
