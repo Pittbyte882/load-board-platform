@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
       description: body.description || null,
       phone: body.phone || null,
       status: 'available',
-      posted_date: new Date().toISOString()
+      posted_date: new Date().toISOString(),
+      posted_by_role: body.postedByRole || 'carrier'
     }
 
     console.log('💾 Attempting to insert truck:', truckData)

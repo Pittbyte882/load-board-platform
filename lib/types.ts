@@ -71,7 +71,8 @@ export interface Truck {
   dotNumber?: string
   mcNumber?: string
   specialEquipment?: string[]
-  postedDate: string              // instead of createdAt
+  postedDate: string 
+  postedByRole?: string             // instead of createdAt
   status: "available" | "booked" | "in_transit" | "maintenance"
 }
 

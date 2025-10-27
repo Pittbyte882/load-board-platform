@@ -60,6 +60,7 @@ export function AvailableTrucks() {
         phone: truck.phone,
         status: truck.status,
         postedDate: truck.posted_date,
+        postedByRole: truck.posted_by_role,
       }))
       
       console.log("Mapped trucks:", mappedTrucks)
@@ -96,19 +97,52 @@ export function AvailableTrucks() {
     setFilteredTrucks(filtered)
   }
 
-  const handleMessage = (truck: equipmentType) => {
-    // Dispatch event to switch to Messages tab and compose new message
-    const event = new CustomEvent("dashboardTabChange", {
-      detail: {
-        tab: "messages",
-        action: "compose",
-        recipient: truck.carrierName,
-        company: truck.carrierCompany,
-        loadId: null,
+  const handleMessage = async (truck: equipmentType) => {
+  try {
+    console.log('📨 Starting message flow for truck:', truck.id)
+    
+    // Create conversation and send initial message
+    const response = await fetch('/api/messages/create-truck-conversation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        carrierId: truck.carrierId,
+        carrierName: truck.carrierName,
+        carrierCompany: truck.carrierCompany,
+        carrierRole: truck.postedByRole || 'carrier',
+        truckId: truck.id,
+        truckDetails: {
+          equipmentType: truck.equipmentType,
+          location: `${truck.city}, ${truck.state}`,
+          availableDate: truck.availableDate,
+          dotNumber: truck.dotNumber,
+          mcNumber: truck.mcNumber,
+        },
+      }),
     })
-    window.dispatchEvent(event)
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log('✅ Conversation created:', data.conversationId)
+      
+      // Navigate to messages tab
+      const event = new CustomEvent("dashboardTabChange", {
+        detail: {
+          tab: "messages",
+          conversationId: data.conversationId
+        },
+      })
+      window.dispatchEvent(event)
+    } else {
+      alert('Failed to start conversation. Please try again.')
+    }
+  } catch (error) {
+    console.error('❌ Error starting conversation:', error)
+    alert('Failed to start conversation. Please try again.')
   }
+}
 
   const handleContact = (truck: equipmentType) => {
     // Handle contact action - could open phone dialer or show contact info

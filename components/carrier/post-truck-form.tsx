@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,7 @@ interface PostTruckFormProps {
 }
 
 export function PostTruckForm({ onBack, onTruckPosted }: PostTruckFormProps) {
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     truckType: "",
     availableDate: "",
@@ -77,72 +79,73 @@ export function PostTruckForm({ onBack, onTruckPosted }: PostTruckFormProps) {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setSubmitSuccess(false)
+  e.preventDefault()
+  setIsSubmitting(true)
+  setSubmitSuccess(false)
 
-    try {
-      const truckData: Partial<TruckType> = {
-        carrierId: "carrier-123", // This would come from auth context
-        carrierName: "Mike Johnson", // This would come from auth context
-        carrierCompany: "Johnson Transport", // This would come from auth context
-        equipmentType: formData.truckType,
-        availableDate: formData.availableDate,
-        city: formData.city,
-        state: formData.state,
-        description: formData.description || undefined,
-        capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
-        specialEquipment: formData.specialEquipment.length > 0 ? formData.specialEquipment : undefined,
-        dotNumber: formData.dotNumber || undefined,
-        mcNumber: formData.mcNumber || undefined,
-        status: "available"
-      }
-
-      console.log('Submitting truck data:', truckData)
-
-      const response = await fetch('/api/trucks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(truckData),
-      })
-
-      const responseData = await response.json()
-      console.log('Response:', responseData)
-
-      if (response.ok) {
-        setSubmitSuccess(true)
-        
-        // Reset form
-        setFormData({
-          truckType: "",
-          availableDate: "",
-          city: "",
-          state: "",
-          description: "",
-          capacity: "",
-          specialEquipment: [],
-          dotNumber: "",
-          mcNumber: ""
-        })
-        
-        // Show success message briefly, then notify parent and go back
-        setTimeout(() => {
-          onTruckPosted()
-          onBack()
-        }, 1500)
-        
-      } else {
-        throw new Error(responseData.error || 'Failed to post truck')
-      }
-    } catch (error) {
-      console.error('Error posting truck:', error)
-      alert(`Failed to post truck: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setIsSubmitting(false)
+  try {
+    // Use actual user data from auth context
+    const truckData = {
+      carrierName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Unknown Carrier',
+      carrierCompany: user?.companyName || 'Unknown Company',
+      equipmentType: formData.truckType,
+      availableDate: formData.availableDate,
+      city: formData.city,
+      state: formData.state,
+      description: formData.description || null,
+      capacity: formData.capacity || null,
+      specialEquipment: formData.specialEquipment.length > 0 ? formData.specialEquipment : [],
+      dotNumber: formData.dotNumber || null,
+      mcNumber: formData.mcNumber || null,
+      phone: user?.phone || null,
+      postedByRole: user?.role || 'carrier', // ADD THIS LINE
     }
+
+    console.log('Submitting truck data:', truckData)
+
+    const response = await fetch('/api/trucks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(truckData),
+    })
+
+    const responseData = await response.json()
+    console.log('Response:', responseData)
+
+    if (response.ok) {
+      setSubmitSuccess(true)
+      
+      // Reset form
+      setFormData({
+        truckType: "",
+        availableDate: "",
+        city: "",
+        state: "",
+        description: "",
+        capacity: "",
+        specialEquipment: [],
+        dotNumber: "",
+        mcNumber: ""
+      })
+      
+      // Show success message briefly, then notify parent and go back
+      setTimeout(() => {
+        onTruckPosted()
+        onBack()
+      }, 1500)
+      
+    } else {
+      throw new Error(responseData.error || 'Failed to post truck')
+    }
+  } catch (error) {
+    console.error('Error posting truck:', error)
+    alert(`Failed to post truck: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   if (submitSuccess) {
     return (

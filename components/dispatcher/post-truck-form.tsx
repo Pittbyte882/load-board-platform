@@ -102,6 +102,7 @@ export function PostTruckForm({ onBack, onTruckPosted }: PostTruckFormProps) {
           specialEquipment: formData.specialEquipment,
           description: formData.description,
           phone: formData.phone,
+          postedByRole: user?.role || 'dispatcher',
         }),
       })
 
