@@ -25,7 +25,7 @@ export async function GET() {
         month: 'short', 
         year: 'numeric' 
       }),
-      lastActive: getLastActive(user.updated_at),
+      lastActive: getLastActive(user.updated_at), 
       status: user.is_active ? 'active' : 'inactive',
     })) || []
 
@@ -39,10 +39,10 @@ export async function GET() {
 }
 
 // Helper function to calculate last active time
-function getLastActive(updatedAt: string): string {
+function getLastActive(createdAt: string): string {
   const now = new Date()
-  const updated = new Date(updatedAt)
-  const diffMs = now.getTime() - updated.getTime()
+  const created = new Date(createdAt)
+  const diffMs = now.getTime() - created.getTime()
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
@@ -50,5 +50,5 @@ function getLastActive(updatedAt: string): string {
   if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`
   if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
   if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
-  return updated.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return created.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }

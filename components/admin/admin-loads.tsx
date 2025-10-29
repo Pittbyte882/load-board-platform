@@ -14,7 +14,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Search, RefreshCw, MapPin, Calendar, DollarSign } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Search, RefreshCw, MapPin, Calendar, DollarSign, Trash2 } from "lucide-react"
 
 interface Load {
   id: string
@@ -39,6 +49,7 @@ export function AdminLoads() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [deletingLoadId, setDeletingLoadId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchLoads()
@@ -91,6 +102,26 @@ export function AdminLoads() {
     }
 
     setFilteredLoads(filtered)
+  }
+
+  const deleteLoad = async (loadId: string) => {
+    try {
+      const response = await fetch(`/api/admin/loads/${loadId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        // Update local state
+        setLoads(loads.filter((load) => load.id !== loadId))
+        setDeletingLoadId(null)
+        alert("Load deleted successfully!")
+      } else {
+        alert("Failed to delete load")
+      }
+    } catch (error) {
+      console.error("Error deleting load:", error)
+      alert("Failed to delete load")
+    }
   }
 
   const getStatusBadgeColor = (status: string) => {
@@ -217,6 +248,7 @@ export function AdminLoads() {
                     <TableHead>Weight</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Posted</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -259,6 +291,15 @@ export function AdminLoads() {
                         </Badge>
                       </TableCell>
                       <TableCell>{load.postedDate}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDeletingLoadId(load.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -267,6 +308,27 @@ export function AdminLoads() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deletingLoadId !== null} onOpenChange={() => setDeletingLoadId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Load?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this load? This action cannot be undone. The load will be permanently removed and will no longer be visible to brokers, carriers, or dispatchers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingLoadId && deleteLoad(deletingLoadId)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Load
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
