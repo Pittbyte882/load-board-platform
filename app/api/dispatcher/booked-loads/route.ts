@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get user from cookies/session
     const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get('session')
+    const sessionCookie = cookieStore.get('user-session')
     
     if (!sessionCookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
