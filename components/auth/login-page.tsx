@@ -52,12 +52,7 @@ export function LoginPage() {
     }))
   }
 
-  const demoCredentials = [
-    { role: "Admin", email: "admin@boxaloo.com", password: "admin123" },
-    { role: "Broker", email: "broker@example.com", password: "broker123" },
-    { role: "Carrier", email: "carrier@example.com", password: "carrier123" },
-    { role: "Dispatcher", email: "dispatcher@example.com", password: "dispatcher123" },
-  ]
+  
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -135,33 +130,7 @@ export function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                {demoCredentials.map((demo, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-left justify-start bg-transparent"
-                    onClick={() => {
-                      setFormData({ email: demo.email, password: demo.password })
-                    }}
-                  >
-                    <span className="font-medium">{demo.role}:</span>
-                    <span className="ml-2 text-gray-600">{demo.email}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
+            
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
