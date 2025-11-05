@@ -49,6 +49,7 @@ import {
   X,
   Gift,
   Clock,
+  LogOut,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { supportStore, type SupportTicket } from "@/lib/support-store"
@@ -160,123 +161,25 @@ export function AdminDashboard() {
   // Updated pricing plans data - single plan per user type with trial info
   const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([
     // Single Carrier Plan
-    {
-      id: "carrier-plan",
-      name: "Carrier Plan",
-      description: "Complete solution for carriers and fleets",
-      monthlyPrice: 99,
-      userType: "carrier",
-      features: [
-        "Unlimited load searches",
-        "Advanced search filters",
-        "Priority load notifications",
-        "Route optimization tools",
-        "Load history & analytics",
-        "Priority customer support",
-        "Payment protection",
-        "Credit line access",
-        "Fuel card integration",
-        "Fleet management dashboard",
-        "Mobile app access",
-        "24/7 phone support",
-      ],
-      limitations: [],
-      subscribers: 4294,
-      revenue: 425106,
-      status: "active",
-      isPopular: true,
-      cta: "Start Free Trial",
-      trialDays: 14,
-      trialFeatures: [
-        "Up to 50 load searches",
-        "Basic search filters",
-        "Email notifications",
-        "Mobile app access",
-        "Standard customer support",
-      ],
-      trialUsers: 1247,
-    },
-    // Single Broker Plan
-    {
-      id: "broker-plan",
-      name: "Broker Plan",
-      description: "Complete solution for brokers and 3PLs",
-      monthlyPrice: 149,
-      userType: "broker",
-      features: [
-        "Unlimited load postings",
-        "Advanced carrier matching",
-        "Priority load placement",
-        "Extended posting duration (30 days)",
-        "Carrier verification tools",
-        "Advanced analytics & reporting",
-        "Priority customer support",
-        "Credit checks on carriers",
-        "Automated load reposting",
-        "Custom load templates",
-        "Multi-user accounts",
-        "Custom integrations & API",
-        "White-label solutions",
-        "24/7 phone support",
-      ],
-      limitations: [],
-      subscribers: 1866,
-      revenue: 493834,
-      status: "active",
-      isPopular: true,
-      cta: "Start Free Trial",
-      trialDays: 7,
-      trialFeatures: [
-        "Up to 10 load postings",
-        "Basic carrier search",
-        "Email notifications",
-        "Standard posting duration (7 days)",
-        "Basic analytics",
-        "Email support",
-      ],
-      trialUsers: 892,
-    },
-    // Single Dispatcher Plan
-    {
-      id: "dispatcher-plan",
-      name: "Dispatcher Plan",
-      description: "Complete solution for dispatchers and fleet managers",
-      monthlyPrice: 79,
-      userType: "dispatcher",
-      features: [
-        "Unlimited driver management",
-        "Multi-client management",
-        "Advanced route optimization",
-        "Driver performance analytics",
-        "Automated dispatch notifications",
-        "Load assignment tools",
-        "Priority customer support",
-        "Client reporting dashboard",
-        "Fuel optimization tools",
-        "Multi-location support",
-        "Advanced analytics suite",
-        "Custom integrations",
-        "API access",
-        "24/7 phone support",
-      ],
-      limitations: [],
-      subscribers: 879,
-      revenue: 69441,
-      status: "active",
-      isPopular: true,
-      cta: "Start Free Trial",
-      trialDays: 10,
-      trialFeatures: [
-        "Manage up to 5 drivers",
-        "Load search & booking",
-        "Driver communication tools",
-        "Basic route planning",
-        "Load tracking",
-        "Email notifications",
-      ],
-      trialUsers: 456,
-    },
+    
   ])
+ useEffect(() => {
+  const fetchPricingPlans = async () => {
+    try {
+      const response = await fetch('/api/pricing', {
+        cache: 'no-store',
+      })
+      if (response.ok) {
+        const plans = await response.json()
+        setPricingPlans(plans)
+      }
+    } catch (error) {
+      console.error('Error fetching pricing plans:', error)
+    }
+  }
+  
+  fetchPricingPlans()
+}, [])
 
   // Support management states
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([])
@@ -758,10 +661,24 @@ export function AdminDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <Badge className="bg-red-100 text-red-800">Admin Access</Badge>
-      </div>
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+      <Badge className="bg-red-100 text-red-800">Admin Access</Badge>
+    </div>
+    <Button
+      variant="outline"
+      onClick={() => {
+        // Clear auth and redirect to login
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+      }}
+      className="flex items-center gap-2"
+    >
+      <LogOut className="h-4 w-4" />
+      Logout
+    </Button>
+  </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
