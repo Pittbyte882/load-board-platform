@@ -42,6 +42,27 @@ export async function POST(request: Request) {
 
     console.log('✅ User created:', newUser.id)
 
+    // Get trial days based on role
+    const trialDays = role === 'broker' ? 120 : 7
+
+    // Send welcome email asynchronously (don't wait for it)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/emails/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'welcome',
+        to: email,
+        data: {
+          userName: `${firstName} ${lastName}`,
+          userRole: role,
+          trialDays: trialDays,
+          loginUrl: `${process.env.NEXT_PUBLIC_APP_URL}/login`,
+        },
+      }),
+    }).catch(err => console.error('Failed to send welcome email:', err))
+
     // Return user data (needed for Stripe checkout)
     return NextResponse.json({
       success: true,

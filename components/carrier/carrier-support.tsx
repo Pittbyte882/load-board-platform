@@ -74,27 +74,42 @@ export function CarrierSupport() {
   }
 
   const handleCreateTicket = async () => {
-    if (!newTicketSubject.trim() || !newTicketMessage.trim()) return
+  if (!newTicketSubject.trim() || !newTicketMessage.trim()) return
 
-    const newTicket = supportStore.createTicket({
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userEmail: currentUser.email,
-      userRole: currentUser.role,
-      subject: newTicketSubject.trim(),
-      message: newTicketMessage.trim(),
-      status: "open",
-      priority: newTicketPriority,
+  try {
+    const response = await fetch('/api/support/create-ticket', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        subject: newTicketSubject.trim(),
+        message: newTicketMessage.trim(),
+        priority: newTicketPriority,
+      }),
     })
 
-    setTickets((prev) => [newTicket, ...prev])
+    if (!response.ok) {
+      throw new Error('Failed to create ticket')
+    }
+
+    const { ticket } = await response.json()
+
     setNewTicketSubject("")
     setNewTicketMessage("")
     setNewTicketPriority("medium")
     setIsNewTicketDialogOpen(false)
 
-    alert("Support ticket created successfully! Our team will respond soon.")
+    alert("Support ticket created successfully! Check your email for confirmation.")
+    
+    // Reload tickets
+    loadUserTickets()
+  } catch (error) {
+    console.error('Error creating ticket:', error)
+    alert('Failed to create support ticket. Please try again.')
   }
+}
 
   const handleSendResponse = async () => {
     if (!selectedTicket || !newResponse.trim()) return

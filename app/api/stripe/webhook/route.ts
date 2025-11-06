@@ -143,11 +143,37 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   
   if (subscriptionId) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    const customer = await stripe.customers.retrieve(subscription.customer as string)
-    const userId = (customer as Stripe.Customer).metadata?.userId
+    const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer
+    const userId = customer.metadata?.userId
 
     if (userId) {
       await saveSubscription(userId, subscription)
+
+      // Get user info and send payment confirmation
+      const { data: user } = await supabase
+        .from('users')
+        .select('email, first_name, last_name')
+        .eq('id', userId)
+        .single()
+
+      if (user) {
+        // Send payment receipt email
+        fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/emails/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'payment-succeeded',
+            to: user.email,
+            data: {
+              userName: `${user.first_name} ${user.last_name}`,
+              amount: (invoice.amount_paid / 100).toFixed(2),
+              invoiceUrl: invoice.hosted_invoice_url,
+            },
+          }),
+        }).catch(err => console.error('Failed to send payment email:', err))
+      }
     }
   }
 }
