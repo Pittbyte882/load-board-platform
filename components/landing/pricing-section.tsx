@@ -197,7 +197,7 @@ export function PricingSection() {
                       </Button>
 
                       <p className="text-xs text-gray-500 text-center mt-3">
-                        No credit card required • Cancel anytime during trial
+                        Credit card required • Cancel anytime during trial
                       </p>
                     </CardContent>
                   </Card>
@@ -280,7 +280,7 @@ export function PricingSection() {
                       </Button>
 
                       <p className="text-xs text-gray-500 text-center mt-3">
-                        No credit card required • Cancel anytime during trial
+                        Credit card required • Cancel anytime during trial
                       </p>
                     </CardContent>
                   </Card>
@@ -363,7 +363,7 @@ export function PricingSection() {
                       </Button>
 
                       <p className="text-xs text-gray-500 text-center mt-3">
-                        No credit card required • Cancel anytime during trial
+                        Credit card required • Cancel anytime during trial
                       </p>
                     </CardContent>
                   </Card>

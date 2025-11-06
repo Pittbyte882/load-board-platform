@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Building2, Truck, Users, Gift, Clock } from "lucide-react"
+import { ArrowLeft, Building2, Truck, Users, Gift, Clock, Loader2 } from "lucide-react"
 
 export function SignupPage() {
   const searchParams = useSearchParams()
@@ -34,6 +34,7 @@ export function SignupPage() {
   const [trialInfo, setTrialInfo] = useState<{
     days: number
     features: string[]
+    price: number
   } | null>(null)
 
   // Pre-select role based on URL parameter and detect trial signup
@@ -50,94 +51,102 @@ export function SignupPage() {
 
     if (trialParam === "true") {
       setIsTrialSignup(true)
-      // Set trial info based on user type
-      const trialData = {
-        carrier: {
-          days: 14,
-          features: [
-            "Up to 50 load searches",
-            "Basic search filters",
-            "Email notifications",
-            "Mobile app access",
-            "Standard customer support",
-          ],
-        },
-        broker: {
-          days: 7,
-          features: [
-            "Up to 10 load postings",
-            "Basic carrier search",
-            "Email notifications",
-            "Standard posting duration (7 days)",
-            "Basic analytics",
-            "Email support",
-          ],
-        },
-        dispatcher: {
-          days: 10,
-          features: [
-            "Manage up to 5 drivers",
-            "Load search & booking",
-            "Driver communication tools",
-            "Basic route planning",
-            "Load tracking",
-            "Email notifications",
-          ],
-        },
-      }
-
-      if (typeParam && typeParam in trialData) {
-        setTrialInfo(trialData[typeParam as keyof typeof trialData])
-      }
+      // Fetch real pricing data
+      fetchTrialInfo(typeParam as string)
     }
   }, [searchParams])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setIsLoading(true)
-
-  try {
-    // Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!")
-      setIsLoading(false)
-      return
-    }
-
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: formData.email,
-        password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        companyName: formData.companyName,
-        role: formData.role,
-        phone: formData.phone
-      })
-    })
-
-    if (response.ok) {
-      if (isTrialSignup) {
-        alert(`Welcome! Your ${trialInfo?.days}-day free trial has started. No payment required.`)
-      } else {
-        alert("Account created successfully!")
+  const fetchTrialInfo = async (userType: string) => {
+    try {
+      const response = await fetch("/api/pricing")
+      if (response.ok) {
+        const plans = await response.json()
+        const plan = plans.find((p: any) => p.userType === userType)
+        if (plan) {
+          setTrialInfo({
+            days: plan.trialDays,
+            features: plan.trialFeatures,
+            price: plan.monthlyPrice,
+          })
+        }
       }
-      // Redirect to login
-      window.location.href = '/login'
-    } else {
-      const error = await response.json()
-      alert(`Error: ${error.error}`)
+    } catch (error) {
+      console.error("Error fetching trial info:", error)
     }
-  } catch (error) {
-    alert("Failed to create account. Please try again.")
-  } finally {
-    setIsLoading(false)
   }
-}
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // Check if passwords match
+      if (formData.password !== formData.confirmPassword) {
+        alert("Passwords don't match!")
+        setIsLoading(false)
+        return
+      }
+
+      // Step 1: Create user account
+      const signupResponse = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          companyName: formData.companyName,
+          role: formData.role,
+          phone: formData.phone
+        })
+      })
+
+      if (!signupResponse.ok) {
+        const error = await signupResponse.json()
+        alert(`Error: ${error.error}`)
+        setIsLoading(false)
+        return
+      }
+
+      const userData = await signupResponse.json()
+
+      // Step 2: If trial signup, create Stripe checkout session
+      if (isTrialSignup) {
+        const checkoutResponse = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userData.user.id,
+            userType: formData.role,
+            userEmail: formData.email,
+            userName: `${formData.firstName} ${formData.lastName}`.trim(),
+          }),
+        })
+
+        const { url } = await checkoutResponse.json()
+
+        if (url) {
+          // Redirect to Stripe Checkout
+          window.location.href = url
+        } else {
+          throw new Error('No checkout URL returned')
+        }
+      } else {
+        // Regular signup without trial
+        alert("Account created successfully!")
+        window.location.href = '/login'
+      }
+    } catch (error) {
+      console.error('Signup error:', error)
+      alert("Failed to create account. Please try again.")
+      setIsLoading(false)
+    }
+  }
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({
@@ -196,7 +205,7 @@ export function SignupPage() {
             </CardTitle>
             <CardDescription className="text-center">
               {isTrialSignup
-                ? "Get started with full access - no payment required"
+                ? `${trialInfo?.days || 0}-day free trial, then $${trialInfo?.price || 0}/month`
                 : "Join thousands of brokers and carriers"}
             </CardDescription>
 
@@ -226,7 +235,9 @@ export function SignupPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-blue-600 mt-3 font-medium">No credit card required • Cancel anytime</p>
+                <p className="text-xs text-blue-600 mt-3 font-medium">
+                  Credit card required • No charge until trial ends • Cancel anytime
+                </p>
               </div>
             )}
 
@@ -369,18 +380,23 @@ export function SignupPage() {
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
                 disabled={isLoading || !formData.agreeToTerms}
               >
-                {isLoading
-                  ? "Creating Account..."
-                  : isTrialSignup
-                    ? `Start ${trialInfo?.days}-Day Free Trial`
-                    : "Create Account"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating account...
+                  </>
+                ) : isTrialSignup ? (
+                  `Start ${trialInfo?.days}-Day Free Trial`
+                ) : (
+                  "Create Account"
+                )}
               </Button>
 
               {/* Trial Disclaimer */}
-              {isTrialSignup && (
+              {isTrialSignup && trialInfo && (
                 <div className="text-center">
                   <p className="text-xs text-gray-500">
-                    Your trial starts immediately. No payment required until trial ends.
+                    After signup, you'll add payment details. Trial starts immediately. First charge: ${trialInfo.price} on day {trialInfo.days + 1}.
                   </p>
                 </div>
               )}

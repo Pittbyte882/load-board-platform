@@ -97,8 +97,8 @@ export async function POST(request: Request) {
           userType: userType,
         },
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard#subscription`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/login?trial_success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/signup?type=${userType}&trial=true`,
       metadata: {
         userId: userId,
         userType: userType,

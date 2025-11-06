@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export function LoginPage() {
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,9 +23,17 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
 
   const { login } = useAuth()
   const router = useRouter()
+
+  // Check for trial success message
+  useEffect(() => {
+    if (searchParams.get('trial_success') === 'true') {
+      setSuccessMessage("✅ Trial activated! Please log in to access your dashboard.")
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,8 +61,6 @@ export function LoginPage() {
     }))
   }
 
-  
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -77,6 +84,14 @@ export function LoginPage() {
             <CardDescription className="text-center">Welcome back to BOXALOO</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Success Message */}
+            {successMessage && (
+              <Alert className="mb-4 border-green-200 bg-green-50">
+                <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Error Message */}
             {error && (
               <Alert className="mb-4 border-red-200 bg-red-50">
                 <AlertDescription className="text-red-800">{error}</AlertDescription>
@@ -129,8 +144,6 @@ export function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-
-            
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
