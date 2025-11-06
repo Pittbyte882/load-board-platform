@@ -10,6 +10,16 @@ export async function GET() {
 
     if (usersError) throw usersError
 
+    // Get trial users count (users with active trials)
+    const { count: trialUsers, error: trialError } = await supabase
+      .from('subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'trialing')
+
+    if (trialError) {
+      console.error('Error fetching trial users:', trialError)
+    }
+
     // Get total loads count
     const { count: totalLoads, error: loadsError } = await supabase
       .from('loads')
@@ -61,6 +71,14 @@ export async function GET() {
       return sum + (parseFloat(load.accepted_rate) || 0)
     }, 0) || 0
 
+    // Calculate trial revenue potential
+    const { data: pricingPlans } = await supabase
+      .from('pricing_plans')
+      .select('monthly_price, user_type')
+
+    const avgPrice = pricingPlans?.reduce((sum, plan) => sum + plan.monthly_price, 0) / (pricingPlans?.length || 1) || 100
+    const trialRevenuePotential = Math.round((trialUsers || 0) * avgPrice)
+
     const stats = {
       totalUsers: totalUsers || 0,
       totalLoads: totalLoads || 0,
@@ -69,6 +87,8 @@ export async function GET() {
       brokers: brokers || 0,
       carriers: carriers || 0,
       dispatchers: dispatchers || 0,
+      trialUsers: trialUsers || 0,
+      trialRevenuePotential: trialRevenuePotential,
     }
 
     console.log('✅ Admin stats fetched:', stats)

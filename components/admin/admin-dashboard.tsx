@@ -244,32 +244,30 @@ export function AdminDashboard() {
   const fetchAdminData = async () => {
     try {
       // Fetch stats
-      // const statsResponse = await fetch("/api/admin/stats")
-      // if (statsResponse.ok) {
-      //   const statsData = await statsResponse.json()
-      //   setStats(statsData)
-      // }
-
-      // Fetch users
-      // const usersResponse = await fetch("/api/admin/users")
-      // if (usersResponse.ok) {
-      //   const usersData = await usersResponse.json()
-      //   setUsers(usersData)
-      // }
-
-      // Fetch loads
-      // const loadsResponse = await fetch("/api/admin/loads")
-      // if (loadsResponse.ok) {
-      //   const loadsData = await loadsResponse.json()
-      //   setLoads(loadsData)
-      // }
-      setIsLoading(false)
-    } catch (error) {
-      console.error("Failed to fetch admin data:", error)
-    } finally {
-      setIsLoading(false)
+    const statsResponse = await fetch("/api/admin/stats")
+    if (statsResponse.ok) {
+      const statsData = await statsResponse.json()
+      console.log('📊 Received stats:', statsData) // Add this log
+      setStats(statsData)
+    } else {
+      console.error('Failed to fetch stats:', statsResponse.status)
     }
+
+    setIsLoading(false)
+  } catch (error) {
+    console.error("Failed to fetch admin data:", error)
+    setIsLoading(false)
   }
+}
+
+useEffect(() => {
+  fetchAdminData()
+  
+  // Refresh stats every 30 seconds
+  const interval = setInterval(fetchAdminData, 30000)
+  
+  return () => clearInterval(interval)
+}, [])
 
   const handleEditPlan = (plan: PricingPlan) => {
     setEditingPlan({ ...plan })

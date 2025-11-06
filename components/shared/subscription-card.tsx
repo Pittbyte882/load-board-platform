@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Star, Clock, Gift, Loader2 } from "lucide-react"
+import { CheckCircle, Star, Clock, Gift, Loader2, CreditCard, History, XCircle } from "lucide-react"
 import { loadStripe } from '@stripe/stripe-js'
 import { useAuth } from "@/lib/auth-context"
 
@@ -20,6 +20,7 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
   const [plan, setPlan] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
   const [subscription, setSubscription] = useState<any>(null)
 
   const fetchPlan = async () => {
@@ -63,7 +64,6 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
     fetchPlan()
     fetchSubscription()
 
-    // Listen for pricing updates from admin
     const handlePricingUpdate = () => {
       console.log('🔄 Pricing updated, refreshing...')
       fetchPlan()
@@ -94,7 +94,6 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
     setCheckoutLoading(true)
 
     try {
-      // Create checkout session
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -108,10 +107,9 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
         }),
       })
 
-      const { sessionId, url } = await response.json()
+      const { url } = await response.json()
 
       if (url) {
-        // Redirect to Stripe Checkout
         window.location.href = url
       } else {
         throw new Error('No checkout URL returned')
@@ -120,6 +118,39 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
       console.error('Error starting trial:', error)
       alert('Failed to start trial. Please try again.')
       setCheckoutLoading(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    if (!user) {
+      alert("Please log in to manage your subscription")
+      return
+    }
+
+    setPortalLoading(true)
+
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+        }),
+      })
+
+      const { url } = await response.json()
+
+      if (url) {
+        window.location.href = url
+      } else {
+        throw new Error('No portal URL returned')
+      }
+    } catch (error) {
+      console.error('Error opening portal:', error)
+      alert('Failed to open subscription management. Please try again.')
+      setPortalLoading(false)
     }
   }
 
@@ -166,33 +197,85 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
     )
   }
 
-  // If user has active subscription, show different UI
+  // If user has active subscription, show management UI
   if (subscription && (subscription.status === 'active' || subscription.status === 'trialing')) {
+    const trialEndsDate = subscription.trial_end ? new Date(subscription.trial_end) : null
+    const periodEndsDate = subscription.current_period_end ? new Date(subscription.current_period_end) : null
+    const isTrial = subscription.status === 'trialing'
+
     return (
       <div className="flex justify-center py-8">
-        <Card className={`w-full max-w-lg border-2 ${getBorderColor()} shadow-xl`}>
+        <Card className={`w-full max-w-2xl border-2 ${getBorderColor()} shadow-xl`}>
           <CardHeader className="text-center">
-            <Badge className="mx-auto mb-4 bg-green-600 text-white">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              {subscription.status === 'trialing' ? 'Free Trial Active' : 'Subscribed'}
-            </Badge>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Badge className={`${isTrial ? 'bg-blue-600' : 'bg-green-600'} text-white`}>
+                <CheckCircle className="h-3 w-3 mr-1" />
+                {isTrial ? 'Free Trial Active' : 'Active Subscription'}
+              </Badge>
+              {subscription.cancel_at_period_end && (
+                <Badge variant="outline" className="text-orange-600 border-orange-600">
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Cancels {periodEndsDate?.toLocaleDateString()}
+                </Badge>
+              )}
+            </div>
+            
             <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-            {subscription.status === 'trialing' && subscription.trial_end && (
-              <p className="text-sm text-gray-600 mt-2">
-                Trial ends: {new Date(subscription.trial_end).toLocaleDateString()}
-              </p>
-            )}
+            <CardDescription className="text-lg mt-2">{plan.description}</CardDescription>
+
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Monthly Price</p>
+                  <p className="text-2xl font-bold text-gray-900">${plan.monthlyPrice}</p>
+                </div>
+                {isTrial && trialEndsDate && (
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Trial Ends</p>
+                    <p className="text-2xl font-bold text-blue-600">{trialEndsDate.toLocaleDateString()}</p>
+                  </div>
+                )}
+                {!isTrial && periodEndsDate && (
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Next Billing Date</p>
+                    <p className="text-2xl font-bold text-gray-900">{periodEndsDate.toLocaleDateString()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => window.location.href = '/dashboard#settings'}>
-              Manage Subscription
-            </Button>
+
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
+              <Button 
+                className="w-full"
+                onClick={handleManageSubscription}
+                disabled={portalLoading}
+              >
+                {portalLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Manage Subscription
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="text-center text-sm text-gray-500 pt-4 border-t">
+              <p>Manage your subscription, update payment method, view invoices, and more</p>
+            </div>
           </CardContent>
         </Card>
       </div>
     )
   }
 
+  // Show trial signup for users without subscription
   return (
     <div className="flex justify-center py-8">
       <Card className={`w-full max-w-lg border-2 ${getBorderColor()} shadow-xl relative`}>
