@@ -90,6 +90,143 @@ export async function POST(request: Request) {
         
         subject = `Welcome to BOXALOO - Your ${data.trialDays}-day trial has started!`
         break
+      
+        case 'trial-ending':
+  emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+      </head>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #f59e0b; text-align: center;">Your Trial is Ending Soon ⏰</h1>
+        
+        <p>Hi ${data.userName},</p>
+        
+        <p>
+          Your ${data.trialDays}-day free trial of BOXALOO ${data.planName} will end in 
+          <strong style="color: #dc2626;">${data.daysRemaining} day(s)</strong>.
+        </p>
+
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; color: #92400e;">
+            <strong>What happens next?</strong><br>
+            On ${data.chargeDate}, your card will be charged <strong>$${data.amount}</strong> for your monthly subscription.
+          </p>
+        </div>
+
+        <h2 style="color: #333;">Your Options:</h2>
+        
+        <div style="margin: 20px 0;">
+          <div style="text-align: center; margin-bottom: 10px;">
+            <a 
+              href="${data.dashboardUrl}#subscription"
+              style="background-color: #16a34a; color: white; padding: 12px 32px; text-decoration: none; border-radius: 5px; display: inline-block;"
+            >
+              Continue Subscription
+            </a>
+          </div>
+          
+          <div style="text-align: center;">
+            <a 
+              href="${data.dashboardUrl}#subscription"
+              style="background-color: #dc2626; color: white; padding: 12px 32px; text-decoration: none; border-radius: 5px; display: inline-block;"
+            >
+              Cancel Before Charge
+            </a>
+          </div>
+        </div>
+
+        <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+
+        <h2 style="color: #333;">What You've Accomplished:</h2>
+        
+        <ul>
+          <li>Loads searched: ${data.stats?.loadsSearched || 0}</li>
+          <li>Bookings made: ${data.stats?.bookingsMade || 0}</li>
+          <li>Time saved: ${data.stats?.timeSaved || 'Significant'}</li>
+        </ul>
+
+        <p>
+          We'd love to continue helping you grow your business! If you have any questions or concerns, 
+          please reply to this email or contact our support team.
+        </p>
+
+        <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+
+        <p style="font-size: 12px; color: #6b7280; text-align: center;">
+          BOXALOO - Box Truck & Cargo Van Load Board
+        </p>
+      </body>
+    </html>
+  `
+  
+  subject = `Your ${data.planName} trial ends in ${data.daysRemaining} day(s)`
+  break
+      case 'payment-reminder':
+        emailHtml = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+            </head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #2563eb; text-align: center;">Upcoming Payment Reminder 💳</h1>
+              
+              <p>Hi ${data.userName},</p>
+              
+              <p>
+                This is a friendly reminder that your BOXALOO subscription payment is coming up soon.
+              </p>
+
+              <div style="background-color: #dbeafe; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #1e40af;">
+                  <strong>Payment Details:</strong><br>
+                  Amount: <strong>$${data.amount}</strong><br>
+                  Billing Date: <strong>${data.billingDate}</strong><br>
+                  Payment Method: ${data.cardBrand} ending in ${data.last4}
+                </p>
+              </div>
+
+              <p>
+                Your subscription will automatically renew, and your card will be charged on the date above.
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a 
+                  href="${data.dashboardUrl}#subscription"
+                  style="background-color: #2563eb; color: white; padding: 12px 32px; text-decoration: none; border-radius: 5px; display: inline-block;"
+                >
+                  Manage Subscription
+                </a>
+              </div>
+
+              <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+
+              <h2 style="color: #333;">Need to Make Changes?</h2>
+              
+              <p>You can:</p>
+              <ul>
+                <li>Update your payment method</li>
+                <li>View your billing history</li>
+                <li>Cancel your subscription (access continues until ${data.billingDate})</li>
+              </ul>
+
+              <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+
+              <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                Questions? Contact us at support@boxaloo.com
+              </p>
+
+              <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                BOXALOO - Box Truck & Cargo Van Load Board
+              </p>
+            </body>
+          </html>
+        `
+        
+        subject = `Payment reminder: $${data.amount} will be charged in 3 days`
+        break
 
       default:
         console.log(`📧 Email type ${type} not yet implemented`)
