@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { calculateDistance } from "@/lib/distance-calculator"
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useAuth } from "@/lib/auth-context" 
 import {
@@ -48,12 +49,9 @@ interface PostLoadFormProps {
   onSuccess: () => void
 }
 
-
-
 export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
   const { user } = useAuth()
 
-  // KEEP THIS ONE - This is the correct place for state
   const [formData, setFormData] = useState<LoadFormData>({
     origin: "",
     destination: "",
@@ -74,7 +72,26 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [submitMessage, setSubmitMessage] = useState("")
+  const [estimatedDistance, setEstimatedDistance] = useState<number | null>(null)
 
+  // Calculate distance when origin/destination changes
+  useEffect(() => {
+    const fetchDistance = async () => {
+      if (formData.origin && formData.destination) {
+        try {
+          const distance = await calculateDistance(formData.origin, formData.destination)
+          setEstimatedDistance(distance)
+        } catch (error) {
+          console.error('Error calculating distance:', error)
+          setEstimatedDistance(null)
+        }
+      } else {
+        setEstimatedDistance(null)
+      }
+    }
+
+    fetchDistance()
+  }, [formData.origin, formData.destination])
 
   // Updated equipment types to match the new requirements
   const equipmentTypes = [
@@ -91,31 +108,6 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
     { value: "FTL", label: "FTL (Full Truck Load)" },
     { value: "LTL", label: "LTL (Less Than Truck Load)" },
   ]
-
-  // Simple distance calculation based on common routes (in a real app, use Google Maps API)
-  const calculateDistance = (origin: string, destination: string): number => {
-    const routes: { [key: string]: number } = {
-      "chicago,il-atlanta,ga": 716,
-      "atlanta,ga-chicago,il": 716,
-      "los angeles,ca-phoenix,az": 357,
-      "phoenix,az-los angeles,ca": 357,
-      "miami,fl-orlando,fl": 235,
-      "orlando,fl-miami,fl": 235,
-      "new york,ny-boston,ma": 215,
-      "boston,ma-new york,ny": 215,
-      "dallas,tx-houston,tx": 239,
-      "houston,tx-dallas,tx": 239,
-      "seattle,wa-portland,or": 173,
-      "portland,or-seattle,wa": 173,
-      "denver,co-salt lake city,ut": 525,
-      "salt lake city,ut-denver,co": 525,
-      "detroit,mi-cleveland,oh": 170,
-      "cleveland,oh-detroit,mi": 170,
-    }
-
-    const key = `${origin.toLowerCase().replace(/\s+/g, "")}-${destination.toLowerCase().replace(/\s+/g, "")}`
-    return routes[key] || 500 // Default to 500 miles if route not found
-  }
 
   const addStop = () => {
     setFormData((prev) => ({
@@ -148,11 +140,11 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-     if (!user) {
-    setSubmitStatus("error")
-    setSubmitMessage("You must be logged in to post a load")
-    return
-  }
+    if (!user) {
+      setSubmitStatus("error")
+      setSubmitMessage("You must be logged in to post a load")
+      return
+    }
 
     if (
       !formData.origin ||
@@ -175,21 +167,23 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
     try {
       console.log("Submitting load form with data:", formData)
 
-      // Calculate distance
-      const distance = calculateDistance(formData.origin, formData.destination)
+      // Calculate distance using Google Maps API
+      console.log("Calculating real distance using Google Maps API...")
+      const distance = await calculateDistance(formData.origin, formData.destination)
+      console.log(`Real distance calculated: ${distance} miles`)
 
       const loadData = {
-        brokerId: user.id,  // Use real user ID instead of "broker-1"
+        brokerId: user.id,
         brokerName: `${user.firstName} ${user.lastName}`,
         brokerCompany: user.companyName,
-        brokerMcNumber: "MC-123456", // In a real app, get from user profile
+        brokerMcNumber: "MC-123456",
         origin: formData.origin,
         destination: formData.destination,
         pickupDate: formData.pickupDate,
         deliveryDate: formData.deliveryDate,
         weight: Number.parseInt(formData.weight),
         rate: Number.parseInt(formData.rate),
-        distance: distance,
+        distance: distance, // Now using REAL calculated distance
         equipment: formData.equipment,
         loadType: formData.loadType as "FTL" | "LTL",
         description: formData.description,
@@ -294,7 +288,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-       {/* Route Information */}
+        {/* Route Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -328,6 +322,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
             </div>
           </CardContent>
         </Card>
+
         {/* Multiple Stops */}
         <Card>
           <CardHeader>
@@ -521,13 +516,16 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
                 onChange={(e) => handleInputChange("rate", e.target.value)}
                 required
               />
-              {formData.rate && formData.origin && formData.destination && (
+              {formData.rate && estimatedDistance && (
                 <p className="text-sm text-gray-600">
                   Estimated rate per mile: $
-                  {(Number.parseInt(formData.rate) / calculateDistance(formData.origin, formData.destination)).toFixed(
-                    2,
-                  )}
+                  {(Number.parseInt(formData.rate) / estimatedDistance).toFixed(2)}
                   /mile
+                </p>
+              )}
+              {formData.origin && formData.destination && !estimatedDistance && (
+                <p className="text-sm text-gray-400">
+                  Calculating distance...
                 </p>
               )}
             </div>
@@ -586,7 +584,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Broker Company</Label>
-                <Input value="Smith Logistics" disabled className="bg-gray-50" />
+                <Input value={user?.companyName || "Your Company"} disabled className="bg-gray-50" />
               </div>
               <div className="space-y-2">
                 <Label>MC Number</Label>
