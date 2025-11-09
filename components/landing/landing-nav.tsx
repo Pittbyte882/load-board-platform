@@ -173,18 +173,18 @@ export function LandingNav() {
             {/* Carriers Section */}
             <div className="px-3 py-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Carriers</p>
-              <Link
-                href="/carriers/box-trucks"
+              <a
+                href="https://www.boxaloo.com/box-truck-loads-for-owner-operators/"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Box Trucks
-              </Link>
-              <Link
-                href="/carriers/cargo-van-sprinter"
+              </a>
+              <a
+                href="https://www.boxaloo.com/cargo-van-sprinter-loads/"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Cargo Van & Sprinter Loads
-              </Link>
+              </a>
             </div>
 
             <Link
@@ -211,56 +211,56 @@ export function LandingNav() {
             {/* Support Section */}
             <div className="px-3 py-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Support</p>
-              <Link
-                href="/about"
+              <a
+                href="https://www.boxaloo.com/about-us/"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 About Us
-              </Link>
-              <Link
-                href="/faq"
+              </a>
+              <a
+                href="https://www.boxaloo.com/faq/"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 FAQ
-              </Link>
-              <Link
-                href="/help-center"
+              </a>
+              <a
+                href="https://www.boxaloo.com/faq/#"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Help Center
-              </Link>
-              <Link
-                href="/factor-your-loads"
+              </a>
+              <a
+                href="https://www.boxaloo.com/factoring-partners/"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Factor Your Loads
-              </Link>
+              </a>
               <Link
                 href="/fuel-card-info"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Fuel Card Info
               </Link>
-              <Link
-                href="/insurance-quote"
+              <a
+                href="https://quote.boxaloo.com/contact515/form/CommercialAutoInsuranceQuote/formperma/m2oj4l2B3-C4DyP9pRdxZc-5YYCdDdEcm-nqxHCNyrE"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Insurance Quote
-              </Link>
-              <Link
-                href="/blog"
+              </a>
+              <a
+                href="https://www.boxaloo.com/blog/"
                 className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
               >
                 Our Blog
-              </Link>
+              </a>
             </div>
 
-            <Link
-              href="/contact"
+            <a
+              href="https://www.boxaloo.com/contact-2/"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
             >
               Contact
-            </Link>
+            </a>
 
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="flex flex-col space-y-3 px-3">
