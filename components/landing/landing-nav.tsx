@@ -4,7 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu, X, ChevronDown, Phone } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function LandingNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -29,44 +35,120 @@ export function LandingNav() {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
+              {/* Carriers Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium inline-flex items-center">
+                  Carriers <ChevronDown className="ml-1 h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>
+                    <a href="https://boxaloo.com/box-truck-loads-for-owner-operators/" className="w-full">
+                      Box Trucks
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/cargo-van-sprinter-loads/" className="w-full">
+                      Cargo Van & Sprinter Loads
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Link
-                href="/features"
+                href="https://www.boxaloo.com/boxaloo-for-brokers/"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
-                Features
+                Brokers
               </Link>
+              
               <Link
-                href="/about"
+                href="/dispatchers"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
-                About
+                Dispatchers
               </Link>
-              <Link href="/blog" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                Blog
-              </Link>
+              
               <Link
-                href="/contact"
+                href="/pricing"
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Pricing
+              </Link>
+
+              {/* Support Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium inline-flex items-center">
+                  Support <ChevronDown className="ml-1 h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/about-us/" className="w-full">
+                      About Us
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/faq/" className="w-full">
+                      FAQ
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/faq/#" className="w-full">
+                      Help Center
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/factoring-partners/" className="w-full">
+                      Factor Your Loads
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/factoring-partners/#" className="w-full">
+                      Fuel Card Info
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://quote.boxaloo.com/contact515/form/CommercialAutoInsuranceQuote/formperma/m2oj4l2B3-C4DyP9pRdxZc-5YYCdDdEcm-nqxHCNyrE" className="w-full">
+                      Insurance Quote
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <a href="https://www.boxaloo.com/blog/" className="w-full">
+                      Our Blog
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <a
+                href="https://www.boxaloo.com/contact-2/"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Contact
-              </Link>
+              </a>
             </div>
           </div>
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6 space-x-3">
+              {/* Phone Number */}
+              <a 
+                href="tel:8777025525" 
+                className="flex items-center text-gray-600 hover:text-gray-900 text-sm font-medium"
+              >
+                <Phone className="h-4 w-4 mr-1" />
+                (877) 702-5525
+              </a>
+
               <Link href="/login">
                 <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
               </Link>
+              
               <Link href="/signup">
-                <Button size="sm">Get Started</Button>
-              </Link>
-              <Link href="/demo">
-                <Button variant="outline" size="sm">
-                  Try Demo
+                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                  Get Started
                 </Button>
               </Link>
             </div>
@@ -88,45 +170,118 @@ export function LandingNav() {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+            {/* Carriers Section */}
+            <div className="px-3 py-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Carriers</p>
+              <Link
+                href="/carriers/box-trucks"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Box Trucks
+              </Link>
+              <Link
+                href="/carriers/cargo-van-sprinter"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Cargo Van & Sprinter Loads
+              </Link>
+            </div>
+
             <Link
-              href="/features"
+              href="/brokers"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
             >
-              Features
+              Brokers
             </Link>
+            
             <Link
-              href="/about"
+              href="/dispatchers"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
             >
-              About
+              Dispatchers
             </Link>
+            
             <Link
-              href="/blog"
+              href="/pricing"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
             >
-              Blog
+              Pricing
             </Link>
+
+            {/* Support Section */}
+            <div className="px-3 py-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Support</p>
+              <Link
+                href="/about"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                About Us
+              </Link>
+              <Link
+                href="/faq"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                FAQ
+              </Link>
+              <Link
+                href="/help-center"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Help Center
+              </Link>
+              <Link
+                href="/factor-your-loads"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Factor Your Loads
+              </Link>
+              <Link
+                href="/fuel-card-info"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Fuel Card Info
+              </Link>
+              <Link
+                href="/insurance-quote"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Insurance Quote
+              </Link>
+              <Link
+                href="/blog"
+                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+              >
+                Our Blog
+              </Link>
+            </div>
+
             <Link
               href="/contact"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
             >
               Contact
             </Link>
+
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="flex flex-col space-y-3 px-3">
+                {/* Phone Number */}
+                <a 
+                  href="tel:8777025525" 
+                  className="flex items-center text-gray-600 hover:text-gray-900 text-sm font-medium px-3 py-2"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  (877) 702-5525
+                </a>
+
                 <Link href="/login">
                   <Button variant="ghost" size="sm" className="w-full justify-start">
                     Sign In
                   </Button>
                 </Link>
+                
                 <Link href="/signup">
-                  <Button size="sm" className="w-full">
+                  <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">
                     Get Started
-                  </Button>
-                </Link>
-                <Link href="/demo">
-                  <Button variant="outline" size="sm" className="w-full bg-transparent">
-                    Try Demo
                   </Button>
                 </Link>
               </div>
