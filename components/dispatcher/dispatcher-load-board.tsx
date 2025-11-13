@@ -4,6 +4,7 @@ import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -149,7 +150,11 @@ export function DispatcherLoadBoard() {
     if (!selectedLoad || !counterOffer) return
 
     if (!user) {
-      alert('Please log in to negotiate loads')
+      showToastWithLogo({
+      title: "Login Required",
+      message: "Please log in to negotiate loads.",
+      type: 'info'
+    })
       return
     }
 
@@ -178,22 +183,38 @@ export function DispatcherLoadBoard() {
 
       if (response.ok) {
         const data = await response.json()
-        alert(`Negotiation sent to ${selectedLoad.broker_company}!\nOriginal Rate: $${selectedLoad.rate.toLocaleString()}\nYour Counter Offer: $${Number(counterOffer).toLocaleString()}`)
+        showToastWithLogo({
+        title: "Negotiation Sent!",
+        message: `Sent to ${selectedLoad.broker_company}! Original: $${selectedLoad.rate.toLocaleString()}, Your Offer: $${Number(counterOffer).toLocaleString()}`,
+        type: 'success'
+      })
         setIsNegotiateDialogOpen(false)
         setSelectedLoad(null)
         setCounterOffer("")
       } else {
-        alert('Failed to send negotiation. Please try again.')
+        showToastWithLogo({
+        title: "Send Failed",
+        message: "Failed to send negotiation. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error('Error submitting negotiation:', error)
-      alert('An error occurred. Please try again.')
+      showToastWithLogo({
+      title: "Error Occurred",
+      message: "An error occurred. Please try again.",
+      type: 'error'
+    })
     }
   }
 // information to be displayed when load is accepted 
   const handleAcceptLoad = async (load: Load) => {
     if (!user) {
-      alert('Please log in to accept loads')
+      showToastWithLogo({
+      title: "Login Required", 
+      message: "Please log in to accept loads.",
+      type: 'info'
+    })
       return
     }
 
@@ -221,16 +242,28 @@ export function DispatcherLoadBoard() {
       })
 
       if (response.ok) {
-        alert(`Load ${load.id} accepted successfully!\nRate: $${load.rate.toLocaleString()}\nThe broker has been notified.`)
+        showToastWithLogo({
+        title: "Load Accepted!",
+        message: `Load ${load.id} accepted for $${load.rate.toLocaleString()}. The broker has been notified.`,
+        type: 'success'
+      })
         fetchLoads() // Refresh the load list
         setIsNegotiateDialogOpen(false)
         setSelectedLoad(null)
       } else {
-        alert('Failed to accept load. Please try again.')
+        showToastWithLogo({
+        title: "Accept Failed",
+        message: "Failed to accept load. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error('Error accepting load:', error)
-      alert('An error occurred. Please try again.')
+      showToastWithLogo({
+      title: "Error Occurred",
+      message: "An error occurred. Please try again.",
+      type: 'error'
+    })
     }
   }
 

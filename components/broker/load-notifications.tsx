@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,7 +54,11 @@ function MessageModal({ isOpen, onClose, recipientName, recipientCompany, recipi
 
   const handleSend = async () => {
     if (!message.trim()) {
-      alert("Please enter a message")
+      showToastWithLogo({
+      title: "Message Required",
+      message: "Please enter a message before sending.",
+      type: 'info'
+    })
       return
     }
 
@@ -62,10 +67,18 @@ function MessageModal({ isOpen, onClose, recipientName, recipientCompany, recipi
       await onSendMessage(message)
       setMessage("")
       onClose()
-      alert("Message sent successfully!")
+      showToastWithLogo({
+        title: "Message Sent!",
+        message: "Your message has been delivered successfully.",
+        type: 'success'
+      })
     } catch (error) {
       console.error("Error sending message:", error)
-      alert("Failed to send message. Please try again.")
+      showToastWithLogo({
+      title: "Send Failed",
+      message: "Failed to send message. Please try again.",
+      type: 'error'
+    })
     } finally {
       setIsSending(false)
     }

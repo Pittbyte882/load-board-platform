@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -141,7 +142,11 @@ export function PostTruckForm({ onBack, onTruckPosted }: PostTruckFormProps) {
     }
   } catch (error) {
     console.error('Error posting truck:', error)
-    alert(`Failed to post truck: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    showToastWithLogo({
+    title: "Post Failure",
+    message: "Failed to Post Truck. Please try again.",
+    type: 'error'
+  })
   } finally {
     setIsSubmitting(false)
   }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -114,13 +115,25 @@ export function AdminLoads() {
         // Update local state
         setLoads(loads.filter((load) => load.id !== loadId))
         setDeletingLoadId(null)
-        alert("Load deleted successfully!")
+        showToastWithLogo({
+          title: "Load Deleted!",
+          message: "The load has been successfully removed from the platform.",
+          type: 'success'
+        })
       } else {
-        alert("Failed to delete load")
+        showToastWithLogo({
+        title: "Delete Failed",
+        message: "Failed to delete the load. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error deleting load:", error)
-      alert("Failed to delete load")
+      showToastWithLogo({
+      title: "Delete Failed",
+      message: "An error occurred while deleting the load. Please try again.",
+      type: 'error'
+    })
     }
   }
 

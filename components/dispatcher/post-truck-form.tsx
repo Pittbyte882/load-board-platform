@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -107,16 +108,28 @@ export function PostTruckForm({ onBack, onTruckPosted }: PostTruckFormProps) {
       })
 
       if (response.ok) {
-        alert("Truck posted successfully!")
+        showToastWithLogo({
+        title: "Truck Posted!",
+        message: "Your truck has been successfully posted and is now available.",
+        type: 'success'
+      })
         onTruckPosted()
         onBack()
       } else {
         const error = await response.json()
-        alert(`Failed to post truck: ${error.error}`)
+        showToastWithLogo({
+        title: "Post Failed",
+        message: `Failed to post truck: ${error.error}`,
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error posting truck:", error)
-      alert("Failed to post truck. Please try again.")
+      showToastWithLogo({
+      title: "Post Failed",
+      message: "Failed to post truck. Please try again.",
+      type: 'error'
+    })
     } finally {
       setIsSubmitting(false)
     }

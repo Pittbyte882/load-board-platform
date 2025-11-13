@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { showToastWithLogo } from '@/components/ui/custom-toasts'
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -82,10 +82,15 @@ export function SignupPage() {
     try {
       // Check if passwords match
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords don't match!")
-        setIsLoading(false)
-        return
-      }
+        showToastWithLogo({
+        title: "Password Error",
+        message: "Passwords don't match! Please try again.",
+        type: 'error'
+      })
+      setIsLoading(false)
+      return
+    }
+
 
       // Step 1: Create user account
       const signupResponse = await fetch('/api/auth/signup', {
@@ -105,11 +110,15 @@ export function SignupPage() {
       })
 
       if (!signupResponse.ok) {
-        const error = await signupResponse.json()
-        alert(`Error: ${error.error}`)
-        setIsLoading(false)
-        return
-      }
+          const error = await signupResponse.json()
+          showToastWithLogo({
+            title: "Signup Failed",
+            message: error.error || "Please check your information and try again.",
+            type: 'error'
+          })
+          setIsLoading(false)
+          return
+        }
 
       const userData = await signupResponse.json()
 
@@ -138,15 +147,24 @@ export function SignupPage() {
         }
       } else {
         // Regular signup without trial
-        alert("Account created successfully!")
+        showToastWithLogo({
+      title: "Account Created Successfully!",
+      message: "Welcome to Boxaloo! Check your email for confirmation.",
+      type: 'success'
+    })
         window.location.href = '/login'
       }
     } catch (error) {
       console.error('Signup error:', error)
-      alert("Failed to create account. Please try again.")
-      setIsLoading(false)
-    }
+       showToastWithLogo({
+      title: "Signup Failed",
+      message: "Please check your information and try again.",
+      type: 'error'
+    })
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({

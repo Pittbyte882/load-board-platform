@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,7 +43,11 @@ export function RatingForm({
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      alert("Please select a rating")
+      showToastWithLogo({
+      title: "Rating Required",
+      message: "Please select a rating before submitting.",
+      type: 'info'
+    })
       return
     }
 

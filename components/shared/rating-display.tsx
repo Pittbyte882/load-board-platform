@@ -3,6 +3,7 @@
 import { Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
+
 interface RatingDisplayProps {
   rating: number
   totalRatings: number

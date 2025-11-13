@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Avatar, AvatarInitials } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -134,7 +135,11 @@ export function UniversalMessages({ userRole, filterOptions, subtitle }: Univers
         setMessageToDelete(null)
       } catch (error) {
         console.error('Failed to delete message:', error)
-        alert('Failed to delete message. You can only delete your own messages.')
+        showToastWithLogo({
+        title: "Delete Failed",
+        message: "Failed to delete message. You can only delete your own messages.",
+        type: 'error'
+      })
       }
     }
   }
@@ -156,7 +161,11 @@ export function UniversalMessages({ userRole, filterOptions, subtitle }: Univers
         setConversationToDelete(null)
       } catch (error) {
         console.error('Failed to delete conversation:', error)
-        alert('Failed to delete conversation.')
+        showToastWithLogo({
+        title: "Delete Failed",
+        message: "Failed to delete conversation. Please try again.",
+        type: 'error'
+      })
       }
     }
   }

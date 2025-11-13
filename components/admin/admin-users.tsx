@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -127,11 +128,19 @@ export function AdminUsers() {
           )
         )
       } else {
-        alert("Failed to update user status")
+        showToastWithLogo({
+        title: "Update Failed",
+        message: "Failed to update user status. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error updating user status:", error)
-      alert("Failed to update user status")
+      showToastWithLogo({
+        title: "Update Failed",
+        message: "An error occurred while updating user status. Please try again.",
+        type: 'error'
+      })
     }
   }
 
@@ -145,11 +154,19 @@ export function AdminUsers() {
         setUsers(users.filter((user) => user.id !== userId))
         setDeleteUserId(null)
       } else {
-        alert("Failed to delete user")
+        showToastWithLogo({
+        title: "Delete Failed",
+        message: "Failed to delete the user. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error deleting user:", error)
-      alert("Failed to delete user")
+      showToastWithLogo({
+      title: "Delete Failed",
+      message: "An error occurred while deleting the user. Please try again.",
+      type: 'error'
+    })
     }
   }
 

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Menu, X, ChevronDown, Phone } from "lucide-react"
+import { Menu as MenuIcon, X as XIcon, ChevronDown, Phone as PhoneIcon } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -136,7 +136,7 @@ export function LandingNav() {
                 href="tel:8777025525" 
                 className="flex items-center text-gray-600 hover:text-gray-900 text-sm font-medium"
               >
-                <Phone className="h-4 w-4 mr-1" />
+                <PhoneIcon className="h-4 w-4 mr-1" />
                 (877) 702-5525
               </a>
 
@@ -160,7 +160,7 @@ export function LandingNav() {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
             >
-              {isMenuOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+              {isMenuOpen ? <XIcon className="block h-6 w-6" /> : <MenuIcon className="block h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -269,7 +269,7 @@ export function LandingNav() {
                   href="tel:8777025525" 
                   className="flex items-center text-gray-600 hover:text-gray-900 text-sm font-medium px-3 py-2"
                 >
-                  <Phone className="h-4 w-4 mr-2" />
+                  <PhoneIcon className="h-4 w-4 mr-2" />
                   (877) 702-5525
                 </a>
 

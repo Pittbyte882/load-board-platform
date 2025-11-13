@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarInitials } from "@/components/ui/avatar"
 import {
@@ -308,13 +309,21 @@ useEffect(() => {
         setEditingPlan(null)
         setIsEditDialogOpen(false)
 
-        alert("Plan updated successfully! Changes will appear on the frontend immediately.")
+        showToastWithLogo({
+          title: "Plan Updated!",
+          message: "Plan updated successfully! Changes will appear on the frontend immediately.",
+          type: 'success'
+        })
       } else {
         throw new Error("Failed to update plan")
       }
     } catch (error) {
       console.error("Error updating plan:", error)
-      alert("Failed to update plan. Please try again.")
+          showToastWithLogo({
+        title: "Update Failed",
+        message: "Failed to update plan. Please try again.",
+        type: 'error'
+      })
     }
   }
 
@@ -343,7 +352,11 @@ useEffect(() => {
       setDeletingPlan(null)
 
       // Show success message
-      alert("Plan deleted successfully!")
+     showToastWithLogo({
+          title: "Plan Deleted!",
+          message: "The plan has been successfully deleted.",
+          type: 'success'
+        })
     }
   }
 
@@ -454,10 +467,18 @@ useEffect(() => {
 
       // Here you would make an API call to update the user status
       console.log(`${newStatus === "suspended" ? "Suspending" : "Activating"} user:`, user.id)
-      alert(`User ${newStatus === "suspended" ? "suspended" : "activated"} successfully!`)
+      showToastWithLogo({
+        title: "User Status Updated!",
+        message: `User ${newStatus === "suspended" ? "suspended" : "activated"} successfully!`,
+        type: 'success'
+      })
     } catch (error) {
       console.error("Error updating user status:", error)
-      alert("Failed to update user status")
+      showToastWithLogo({
+        title: "Update Failed",
+        message: "Failed to update user status. Please try again.",
+        type: 'error'
+      })
     }
   }
 
@@ -476,10 +497,18 @@ useEffect(() => {
         console.log("Deleting user:", deletingUser.id)
         setIsDeleteUserDialogOpen(false)
         setDeletingUser(null)
-        alert("User deleted successfully!")
+        showToastWithLogo({
+        title: "User Deleted!",
+        message: "The user account has been permanently deleted.",
+        type: 'success'
+      })
       } catch (error) {
         console.error("Error deleting user:", error)
-        alert("Failed to delete user")
+        showToastWithLogo({
+          title: "Delete Failed",
+          message: "Failed to delete user. Please try again.",
+          type: 'error'
+        })
       }
     }
   }
@@ -494,10 +523,18 @@ useEffect(() => {
         console.log("Saving user:", editingUser)
         setIsEditUserDialogOpen(false)
         setEditingUser(null)
-        alert("User updated successfully!")
+        showToastWithLogo({
+          title: "User Updated!",
+          message: "User information has been successfully updated.",
+          type: 'success'
+        })
       } catch (error) {
         console.error("Error updating user:", error)
-        alert("Failed to update user")
+        showToastWithLogo({
+        title: "Update Failed",
+        message: "Failed to update user. Please try again.",
+        type: 'error'
+      })
       }
     }
   }
@@ -507,10 +544,18 @@ useEffect(() => {
     try {
       // Here you would make an API call to save the settings
       console.log("Saving settings:", platformSettings)
-      alert("Settings saved successfully!")
+      showToastWithLogo({
+        title: "Settings Saved!",
+        message: "Platform settings have been successfully updated.",
+        type: 'success'
+      })
     } catch (error) {
       console.error("Error saving settings:", error)
-      alert("Failed to save settings")
+      showToastWithLogo({
+        title: "Save Failed",
+        message: "Failed to save settings. Please try again.",
+        type: 'error'
+      })
     }
   }
 
@@ -532,17 +577,29 @@ useEffect(() => {
     })
 
     setNewResponse("")
-    alert("Response sent successfully!")
+    showToastWithLogo({
+      title: "Response Sent!",
+      message: "Your response has been sent to the customer.",
+      type: 'success'
+    })
   }
 
   const handleUpdateTicketStatus = async (ticketId: string, newStatus: SupportTicket["status"]) => {
     supportStore.updateTicketStatus(ticketId, newStatus)
-    alert("Ticket status updated successfully!")
+    showToastWithLogo({
+      title: "Status Updated!",
+      message: "Support ticket status has been updated.",
+      type: 'success'
+    })
   }
 
   const handleAssignTicket = async (ticketId: string, assignee: string) => {
     supportStore.assignTicket(ticketId, assignee)
-    alert("Ticket assigned successfully!")
+    showToastWithLogo({
+      title: "Ticket Assigned!",
+      message: "Support ticket has been successfully assigned.",
+      type: 'success'
+    })
   }
 
   const getStatusColor = (status: string) => {

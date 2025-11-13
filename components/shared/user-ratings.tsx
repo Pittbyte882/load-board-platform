@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Avatar, AvatarInitials } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Star, Plus } from "lucide-react"
@@ -120,14 +121,26 @@ export function UserRatings({
         setShowRatingForm(false)
         fetchUserRatings()
         checkRatingEligibility()
-        alert("Rating submitted successfully!")
+        showToastWithLogo({
+        title: "Rating Submitted!",
+        message: "Your rating has been submitted successfully.",
+        type: 'success'
+      })
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showToastWithLogo({
+        title: "Submit Failed",
+        message: `Error: ${error.error}`,
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error submitting rating:", error)
-      alert("Failed to submit rating. Please try again.")
+      showToastWithLogo({
+      title: "Submit Failed",
+      message: "Failed to submit rating. Please try again.",
+      type: 'error'
+    })
     }
   }
 

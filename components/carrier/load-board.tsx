@@ -3,6 +3,7 @@ import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -166,7 +167,11 @@ export function LoadBoard() {
     if (!selectedLoad || !counterOffer) return
 
     if (!user) {
-      alert('Please log in to negotiate loads')
+      showToastWithLogo({
+      title: "Login Required",
+      message: "Please log in to negotiate loads.",
+      type: 'info'
+    })
       return
     }
 
@@ -194,22 +199,38 @@ export function LoadBoard() {
       })
 
       if (response.ok) {
-        alert(`Negotiation sent to ${selectedLoad.brokerCompany}!`)
+        showToastWithLogo({
+        title: "Negotiation Sent!",
+        message: `Your offer has been sent to ${selectedLoad.brokerCompany}.`,
+        type: 'success'
+      })
         setShowNegotiateModal(false)
         setSelectedLoad(null)
         setCounterOffer("")
       } else {
-        alert('Failed to send negotiation. Please try again.')
+        showToastWithLogo({
+        title: "Send Failed",
+        message: "Failed to send negotiation. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error('Error submitting negotiation:', error)
-      alert('An error occurred. Please try again.')
+      showToastWithLogo({
+      title: "Error Occurred",
+      message: "An error occurred. Please try again.",
+      type: 'error'
+    })
     }
   }
 
   const handleAcceptLoad = async (load: Load) => {
     if (!user) {
-      alert('Please log in to accept loads')
+      showToastWithLogo({
+      title: "Login Required", 
+      message: "Please log in to accept loads.",
+      type: 'info'
+    })
       return
     }
 
@@ -235,16 +256,28 @@ export function LoadBoard() {
       })
 
       if (response.ok) {
-        alert(`Load ${load.id} accepted successfully!`)
+        showToastWithLogo({
+        title: "Load Accepted!",
+        message: `Load ${load.id} has been successfully accepted.`,
+        type: 'success'
+      })
         fetchLoads() // Refresh the load list
         setShowNegotiateModal(false)
         setSelectedLoad(null)
       } else {
-        alert('Failed to accept load. Please try again.')
+        showToastWithLogo({
+        title: "Accept Failed", 
+        message: "Failed to accept load. Please try again.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error('Error accepting load:', error)
-      alert('An error occurred. Please try again.')
+      showToastWithLogo({
+      title: "Error Occurred",
+      message: "An error occurred. Please try again.",
+      type: 'error'
+    })
     }
   }
 
@@ -255,12 +288,21 @@ export function LoadBoard() {
 
   const handlePhone = (load: Load) => {
     // In a real app, this would initiate a call or show broker's phone number
-    alert(`Calling ${load.brokerCompany}\nBroker: ${load.brokerName}\nLoad: ${load.id}`)
+    showToastWithLogo({
+    title: "Calling Broker",
+    message: `Calling ${load.brokerCompany} - ${load.brokerName} for Load ${load.id}`,
+    type: 'info'
+  })
+
   }
 
   const handleMessage = (load: Load) => {
     // In a real app, this would open the messaging system
-    alert(`Opening message thread with ${load.brokerCompany}\nBroker: ${load.brokerName}\nLoad: ${load.id}`)
+    showToastWithLogo({
+    title: "Opening Messages",
+    message: `Starting conversation with ${load.brokerCompany} about Load ${load.id}`,
+    type: 'info'
+  })
   }
 
   const getLoadTypeColor = (loadType: string) => {

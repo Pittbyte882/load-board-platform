@@ -1,4 +1,5 @@
 import type React from "react"
+import { Toaster } from 'sonner'
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
@@ -24,10 +25,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
+ return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+        <Toaster 
+          position="top-center"
+          richColors
+          expand={false}
+          duration={4000}
+        />
       </body>
     </html>
   )

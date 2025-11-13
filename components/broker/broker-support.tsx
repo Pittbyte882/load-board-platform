@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -101,13 +102,21 @@ export function BrokerSupport() {
     setNewTicketPriority("medium")
     setIsNewTicketDialogOpen(false)
 
-    alert("Support ticket created successfully! Check your email for confirmation.")
+    showToastWithLogo({
+    title: "Ticket Created!",
+    message: "Support ticket created successfully! Check your email for confirmation.",
+    type: 'success'
+  })
     
     // Reload tickets
     loadUserTickets()
   } catch (error) {
     console.error('Error creating ticket:', error)
-    alert('Failed to create support ticket. Please try again.')
+    showToastWithLogo({
+    title: "Creation Failed",
+    message: "Failed to create support ticket. Please try again.",
+    type: 'error'
+  })
   }
 }
   const handleSendResponse = async () => {
@@ -123,7 +132,11 @@ export function BrokerSupport() {
 
     setNewResponse("")
     loadUserTickets()
-    alert("Response sent successfully!")
+    showToastWithLogo({
+    title: "Response Sent!",
+    message: "Your response has been sent to the support team.",
+    type: 'success'
+  })
   }
 
   const handleViewTicket = (ticket: SupportTicket) => {

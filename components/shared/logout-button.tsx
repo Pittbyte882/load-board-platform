@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { LogOut, Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
+import { showConfirmWithLogo, showToastWithLogo } from "@/components/ui/custom-toasts"
 
 interface LogoutButtonProps {
   variant?: "default" | "outline" | "ghost" | "destructive"
@@ -24,20 +25,31 @@ export function LogoutButton({
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleLogout = async () => {
-    if (!confirm("Are you sure you want to log out?")) return
-
-    setIsLoggingOut(true)
-    try {
-      // Call logout from auth context
-      await logout()
-      
-      // Force a hard redirect to login page
-      window.location.href = "/login"
-    } catch (error) {
-      console.error("Logout failed:", error)
-      alert("Failed to log out. Please try again.")
-      setIsLoggingOut(false)
-    }
+    //  Replace confirm() with custom toast
+    showConfirmWithLogo(
+      "Confirm Logout",
+      "Are you sure you want to log out?",
+      async () => {
+        // This runs when user clicks "OK"
+        setIsLoggingOut(true)
+        try {
+          await logout()
+          window.location.href = "/login"
+        } catch (error) {
+          console.error("Logout failed:", error)
+          showToastWithLogo({
+            title: "Logout Failed",
+            message: "Please try again.",
+            type: 'error'
+          })
+          setIsLoggingOut(false)
+        }
+      },
+      () => {
+        // This runs when user clicks "Cancel" (optional)
+        console.log("Logout cancelled")
+      }
+    )
   }
 
   return (

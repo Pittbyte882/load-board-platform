@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -169,11 +170,19 @@ export function ManageCarriers() {
         resetForm()
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to add carrier")
+        showToastWithLogo({
+        title: "Add Failed",
+        message: error.error || "Failed to add carrier.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error adding carrier:", error)
-      alert("An error occurred while adding the carrier")
+      showToastWithLogo({
+      title: "Add Failed",
+      message: "An error occurred while adding the carrier.",
+      type: 'error'
+    })
     } finally {
       setIsSaving(false)
     }
@@ -197,11 +206,19 @@ export function ManageCarriers() {
         resetForm()
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to update carrier")
+        showToastWithLogo({
+        title: "Update Failed",
+        message: error.error || "Failed to update carrier.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error updating carrier:", error)
-      alert("An error occurred while updating the carrier")
+      showToastWithLogo({
+      title: "Update Failed",
+      message: "An error occurred while updating the carrier.",
+      type: 'error'
+    })
     } finally {
       setIsSaving(false)
     }
@@ -222,11 +239,19 @@ export function ManageCarriers() {
         setSelectedCarrier(null)
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to delete carrier")
+        showToastWithLogo({
+        title: "Delete Failed",
+        message: error.error || "Failed to delete carrier.",
+        type: 'error'
+      })
       }
     } catch (error) {
       console.error("Error deleting carrier:", error)
-      alert("An error occurred while deleting the carrier")
+      showToastWithLogo({
+      title: "Delete Failed",
+      message: "An error occurred while deleting the carrier.",
+      type: 'error'
+    })
     } finally {
       setIsSaving(false)
     }

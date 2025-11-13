@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Star, Clock, Gift, Loader2, CreditCard, History, XCircle } from "lucide-react"
 import { loadStripe } from '@stripe/stripe-js'
@@ -87,7 +88,11 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
 
   const handleStartTrial = async () => {
     if (!user) {
-      alert("Please log in to start your free trial")
+      showToastWithLogo({
+      title: "Login Required",
+      message: "Please log in to start your free trial.",
+      type: 'info'
+    })
       return
     }
 
@@ -116,14 +121,22 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
       }
     } catch (error) {
       console.error('Error starting trial:', error)
-      alert('Failed to start trial. Please try again.')
+      showToastWithLogo({
+      title: "Trial Failed",
+      message: "Failed to start trial. Please try again.",
+      type: 'error'
+    })
       setCheckoutLoading(false)
     }
   }
 
   const handleManageSubscription = async () => {
     if (!user) {
-      alert("Please log in to manage your subscription")
+      showToastWithLogo({
+      title: "Login Required",
+      message: "Please log in to manage your subscription.",
+      type: 'info'
+    })
       return
     }
 
@@ -149,7 +162,11 @@ export function SubscriptionCard({ userType, userId }: SubscriptionCardProps) {
       }
     } catch (error) {
       console.error('Error opening portal:', error)
-      alert('Failed to open subscription management. Please try again.')
+      showToastWithLogo({
+      title: "Access Failed",
+      message: "Failed to open subscription management. Please try again.",
+      type: 'error'
+    })
       setPortalLoading(false)
     }
   }

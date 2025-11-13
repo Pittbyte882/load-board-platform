@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { Avatar, AvatarInitials, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Camera, Upload, Trash2, Loader2 } from "lucide-react"
 
 interface ProfileImageUploadProps {
@@ -45,13 +46,21 @@ export function ProfileImageUpload({
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      showToastWithLogo({
+      title: "Invalid File",
+      message: "Please select an image file.",
+      type: 'info'
+    })
       return
     }
 
     // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be less than 2MB')
+      showToastWithLogo({
+      title: "File Too Large",
+      message: "Image must be less than 2MB.",
+      type: 'info'
+    })
       return
     }
 
@@ -75,10 +84,19 @@ export function ProfileImageUpload({
       const data = await response.json()
       setImageUrl(data.imageUrl)
       onImageUpdate(data.imageUrl)
-      alert('Profile image updated successfully!')
+      showToastWithLogo({
+      title: "Image Updated!",
+      message: "Your profile image has been updated successfully.",
+      type: 'success'
+    })
     } catch (error) {
       console.error('Upload error:', error)
-      alert(error instanceof Error ? error.message : 'Failed to upload image')
+      showToastWithLogo({
+      title: "Upload Failed",
+      message: error instanceof Error ? error.message : "Failed to upload image.",
+      type: 'error'
+    })
+
     } finally {
       setIsUploading(false)
     }
@@ -102,10 +120,18 @@ export function ProfileImageUpload({
 
       setImageUrl(null)
       onImageUpdate(null)
-      alert('Profile image removed successfully!')
+      showToastWithLogo({
+      title: "Image Removed!",
+      message: "Your profile image has been removed successfully.",
+      type: 'success'
+    })
     } catch (error) {
       console.error('Delete error:', error)
-      alert('Failed to remove image')
+      showToastWithLogo({
+      title: "Remove Failed",
+      message: "Failed to remove image. Please try again.",
+      type: 'error'
+    })
     } finally {
       setIsDeleting(false)
     }

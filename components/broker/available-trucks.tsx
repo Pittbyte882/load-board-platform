@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
@@ -136,11 +137,19 @@ export function AvailableTrucks() {
       })
       window.dispatchEvent(event)
     } else {
-      alert('Failed to start conversation. Please try again.')
+      showToastWithLogo({
+        title: "Connection Failed",
+        message: "Failed to start conversation. Please try again.",
+        type: 'error'
+      })
     }
   } catch (error) {
     console.error('❌ Error starting conversation:', error)
-    alert('Failed to start conversation. Please try again.')
+    showToastWithLogo({
+      title: "Connection Failed",
+      message: "Failed to start conversation. Please try again.",
+      type: 'error'
+    })
   }
 }
 
@@ -150,7 +159,11 @@ export function AvailableTrucks() {
     if (truck.phone) {
       window.open(`tel:${truck.phone}`)
     } else {
-      alert(`Contact ${truck.carrierName} at ${truck.carrierCompany}`)
+      showToastWithLogo({
+      title: "Contact Information",
+      message: `Contact ${truck.carrierName} at ${truck.carrierCompany}`,
+      type: 'info'
+    })
     }
   }
 
