@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,11 +19,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Trash2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Search, Plus, MessageSquare, Clock, CheckCircle, AlertCircle, HelpCircle, Send } from "lucide-react"
 import { supportStore, type SupportTicket } from "@/lib/support-store"
 
 export function CarrierSupport() {
+  const { user } = useAuth()
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null)
   const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false)
@@ -33,19 +36,28 @@ export function CarrierSupport() {
   const [newResponse, setNewResponse] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Current user info (in a real app, this would come from auth context)
-  const currentUser = {
-    id: "carrier-001",
-    name: "John Smith",
-    email: "john@example.com",
-    role: "carrier" as const,
+  const loadUserTickets = async () => {
+    if (!user?.id) return
+
+    try {
+      const response = await fetch(`/api/support/tickets?userId=${user.id}`)
+      if (response.ok) {
+        const tickets = await response.json()
+        setTickets(tickets)
+      }
+    } catch (error) {
+      console.error('Error loading tickets:', error)
+      showToastWithLogo({
+        title: "Load Failed",
+        message: "Failed to load support tickets. Please try again.",
+        type: 'error'
+      })
+    }
   }
 
   useEffect(() => {
-    // Load user's tickets
     loadUserTickets()
 
-    // Listen for ticket updates
     const handleTicketUpdate = () => {
       loadUserTickets()
     }
@@ -61,89 +73,144 @@ export function CarrierSupport() {
     }
   }, [])
 
-  const loadUserTickets = () => {
-    const userTickets = supportStore.getUserTickets(currentUser.id)
-    setTickets(userTickets)
-
-    // Update selected ticket if it's open
-    if (selectedTicket) {
-      const updatedTicket = supportStore.getTicketById(selectedTicket.id)
-      if (updatedTicket) {
-        setSelectedTicket(updatedTicket)
-      }
-    }
-  }
-
   const handleCreateTicket = async () => {
-  if (!newTicketSubject.trim() || !newTicketMessage.trim()) return
-
-  try {
-    const response = await fetch('/api/support/create-ticket', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId: currentUser.id,
-        subject: newTicketSubject.trim(),
-        message: newTicketMessage.trim(),
-        priority: newTicketPriority,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to create ticket')
+    if (!newTicketSubject.trim() || !newTicketMessage.trim()) return
+    
+    if (!user?.id) {
+      showToastWithLogo({
+        title: "Login Required",
+        message: "Please log in to create a support ticket.",
+        type: 'error'
+      })
+      return
     }
 
-    const { ticket } = await response.json()
+    try {
+      const response = await fetch('/api/support/create-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          subject: newTicketSubject.trim(),
+          message: newTicketMessage.trim(),
+          priority: newTicketPriority,
+        }),
+      })
 
-    setNewTicketSubject("")
-    setNewTicketMessage("")
-    setNewTicketPriority("medium")
-    setIsNewTicketDialogOpen(false)
+      if (!response.ok) {
+        throw new Error('Failed to create ticket')
+      }
 
-    showToastWithLogo({
-    title: "Ticket Created!",
-    message: "Support ticket created successfully! Check your email for confirmation.",
-    type: 'success'
-  })
-    
-    // Reload tickets
-    loadUserTickets()
-  } catch (error) {
-    console.error('Error creating ticket:', error)
-    showToastWithLogo({
-      title: "Creation Failed",
-      message: "Failed to create support ticket. Please try again.",
-      type: 'error'
-    })
+      const { ticket } = await response.json()
+
+      setNewTicketSubject("")
+      setNewTicketMessage("")
+      setNewTicketPriority("medium")
+      setIsNewTicketDialogOpen(false)
+
+      showToastWithLogo({
+        title: "Ticket Created!",
+        message: "Support ticket created successfully! Check your email for confirmation.",
+        type: 'success'
+      })
+      
+      loadUserTickets()
+    } catch (error) {
+      console.error('Error creating ticket:', error)
+      showToastWithLogo({
+        title: "Creation Failed",
+        message: "Failed to create support ticket. Please try again.",
+        type: 'error'
+      })
+    }
   }
-}
 
   const handleSendResponse = async () => {
     if (!selectedTicket || !newResponse.trim()) return
 
-    supportStore.addResponse(selectedTicket.id, {
-      ticketId: selectedTicket.id,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderType: "user",
-      message: newResponse.trim(),
-    })
+    if (!user?.id) {
+      showToastWithLogo({
+        title: "Login Required",
+        message: "Please log in to send a response.",
+        type: 'error'
+      })
+      return
+    }
 
-    setNewResponse("")
-    loadUserTickets()
-    showToastWithLogo({
-    title: "Response Sent!",
-    message: "Your response has been sent to the support team.",
-    type: 'success'
-  })
+    try {
+      const response = await fetch('/api/support/reply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ticketId: selectedTicket.id,
+          senderId: user.id,
+          senderName: `${user.firstName || 'User'} ${user.lastName || ''}`.trim(),
+          senderType: "user",
+          message: newResponse.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send response')
+      }
+
+      setNewResponse("")
+      loadUserTickets()
+      
+      showToastWithLogo({
+        title: "Response Sent!",
+        message: "Your response has been sent to the support team.",
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error sending response:', error)
+      showToastWithLogo({
+        title: "Send Failed",
+        message: "Failed to send response. Please try again.",
+        type: 'error'
+      })
+    }
   }
 
   const handleViewTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket)
     setIsTicketDialogOpen(true)
   }
+  const handleDeleteTicket = async (ticketId: string) => {
+  if (!confirm('Are you sure you want to delete this support ticket? This action cannot be undone.')) {
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/support/delete?ticketId=${ticketId}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to delete ticket')
+    }
+
+    loadUserTickets() // Reload tickets list
+    setIsTicketDialogOpen(false) // Close the dialog
+    
+    showToastWithLogo({
+      title: "Ticket Deleted!",
+      message: "Support ticket has been permanently deleted.",
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('Error deleting ticket:', error)
+    showToastWithLogo({
+      title: "Delete Failed", 
+      message: "Failed to delete ticket. Please try again.",
+      type: 'error'
+    })
+  }
+}
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -415,7 +482,7 @@ export function CarrierSupport() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarInitials name={currentUser.name} />
+                        <AvatarInitials name={`${user?.firstName || 'User'} ${user?.lastName || ''}`} />
                       </Avatar>
                       <div>
                         <p className="font-medium">You</p>
@@ -477,10 +544,17 @@ export function CarrierSupport() {
               )}
             </div>
           )}
+          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTicketDialogOpen(false)}>
-              Close
-            </Button>
+            <div className="flex justify-between w-full">
+              <Button variant="outline" onClick={() => handleDeleteTicket(selectedTicket!.id)} className="text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Ticket
+              </Button>
+              <Button variant="outline" onClick={() => setIsTicketDialogOpen(false)}>
+                Close
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

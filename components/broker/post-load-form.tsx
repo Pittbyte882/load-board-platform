@@ -193,6 +193,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
         teamDriver: formData.teamDriver,
         specialRequirements: formData.specialRequirements,
         stops: formData.stops,
+        postedDate: new Date().toISOString(),
       }
 
       console.log("Sending load data to API:", loadData)

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package, DollarSign, TrendingUp, Calendar, Truck, Star } from "lucide-react"
+import { Package, DollarSign, TrendingUp, Calendar, Truck, Star  } from "lucide-react"
 import { LoadBoard } from "./load-board"
 import { CarrierProfile } from "./carrier-profile"
 import { BookedLoads } from "./booked-loads"

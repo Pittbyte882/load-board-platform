@@ -1,5 +1,5 @@
 "use client"
-
+import { useAuth } from "@/lib/auth-context"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { LocationAutocomplete } from "@/components/ui/location-autocomplete"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { showToastWithLogo } from "@/components/ui/custom-toasts"
 import {
   Search,
   MapPin,
@@ -62,6 +63,7 @@ const equipmentTypes = [
 ]
 
 export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
+  const { user } = useAuth()
   const [loads, setLoads] = useState<Load[]>([])
   const [filteredLoads, setFilteredLoads] = useState<Load[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -91,14 +93,12 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
 
   // Chat state
   const [chatMessage, setChatMessage] = useState("")
-  const [chatHistory, setChatHistory] = useState<
-    Array<{
-      id: string
-      sender: string
-      message: string
-      timestamp: string
-    }>
-  >([])
+  const [chatHistory, setChatHistory] = useState<Array<{
+  id: string
+  sender: string
+  message: string
+  timestamp: string
+}>>([])
 
   useEffect(() => {
     fetchLoads()
@@ -118,9 +118,14 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
   }, [loads, searchTerm, statusFilter, sortBy])
 
   const fetchLoads = async () => {
+    if (!user?.id) {
+    console.log("No user ID found")
+    setIsLoading(false)
+    return
+  }
     try {
       console.log("Fetching broker loads...")
-      const response = await fetch("/api/loads?brokerId=broker-1", {
+      const response = await fetch(`/api/loads?brokerId=${user?.id}`, {
         cache: "no-store",
         headers: {
           "Cache-Control": "no-cache",
@@ -129,8 +134,29 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
 
       if (response.ok) {
         const data = await response.json()
-        console.log("Fetched loads:", data.length)
-        setLoads(data)
+        console.log("Raw data from API:", data[0]) // Debug log
+        console.log("Total loads fetched:", data.length)
+        
+        // Transform database fields to match frontend expectations
+        const transformedData = data.map((load: any) => ({
+          ...load,
+          // Map database snake_case to frontend camelCase
+          postedDate: load.posted_date || load.created_at,
+          origin: load.pickup_location || load.origin,
+          destination: load.delivery_location || load.destination,
+          pickupDate: load.pickup_date,
+          deliveryDate: load.delivery_date,
+          loadType: load.load_type,
+          equipment: load.equipment_type || load.equipment,
+          brokerMcNumber: load.broker_mc_number || load.broker_mc || "MC-123456",
+          carrierName: load.carrier_name,
+          carrierId: load.carrier_id,
+          expedited: load.expedited || false,
+          hazmat: load.hazmat || false,
+        }))
+        
+        console.log("Transformed data:", transformedData[0]) // Debug log
+        setLoads(transformedData)
       } else {
         console.error("Failed to fetch loads:", response.status)
       }
@@ -211,14 +237,25 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    if (!dateString) return "Unknown"
+    
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return "Unknown"
+    
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
+      year: "numeric",
     })
   }
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    if (!dateString) return "Unknown"
+    
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return "Unknown"
+    
+    return date.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -272,13 +309,25 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
       if (response.ok) {
         setLoads((prev) => prev.map((load) => (load.id === selectedLoad.id ? updatedLoad : load)))
         setShowEditModal(false)
-        alert("Load updated successfully!")
+        showToastWithLogo({
+          title: "Load Updated!",
+          message: "Load has been successfully updated.",
+          type: 'success'
+        })
       } else {
-        alert("Failed to update load. Please try again.")
+        showToastWithLogo({
+          title: "Update Failed",
+          message: "Failed to update load. Please try again.",
+          type: 'error'
+        })
       }
     } catch (error) {
       console.error("Error updating load:", error)
-      alert("Error updating load. Please try again.")
+      showToastWithLogo({
+        title: "Update Failed", 
+        message: "Error updating load. Please try again.",
+        type: 'error'
+      })
     }
   }
 
@@ -333,11 +382,19 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
           console.log(`Load ${loadId} deleted successfully`)
         } else {
           console.error("Failed to delete load:", response.status)
-          alert("Failed to delete load. Please try again.")
+          showToastWithLogo({
+            title: "Delete Failed",
+            message: "Failed to delete load. Please try again.",
+            type: 'error'
+          })
         }
       } catch (error) {
         console.error("Error deleting load:", error)
-        alert("Error deleting load. Please try again.")
+        showToastWithLogo({
+          title: "Delete Failed",
+          message: "Error deleting load. Please try again.",
+          type: 'error'
+        })
       }
     }
   }
@@ -854,14 +911,14 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
             {/* Chat History */}
             <div className="flex-1 overflow-y-auto border rounded-lg p-4 space-y-3">
               {chatHistory.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === "You" ? "justify-end" : "justify-start"}`}>
+                <div key={msg.id} className={`flex ${msg.sender === 'You' ? 'justify-end' : 'justify-start'}`}>
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      msg.sender === "You" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"
+                      msg.sender === 'You' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
                     }`}
                   >
                     <p className="text-sm">{msg.message}</p>
-                    <p className={`text-xs mt-1 ${msg.sender === "You" ? "text-blue-100" : "text-gray-500"}`}>
+                    <p className={`text-xs mt-1 ${msg.sender === 'You' ? 'text-blue-100' : 'text-gray-500'}`}>
                       {new Date(msg.timestamp).toLocaleTimeString()}
                     </p>
                   </div>

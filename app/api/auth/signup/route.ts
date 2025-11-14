@@ -18,7 +18,10 @@ export async function POST(request: Request) {
     }
 
     // Hash password
+    
+
     const hashedPassword = await bcrypt.hash(password, 10)
+console.log('🔨 Generated hash for password "' + password + '":', hashedPassword)
 
     // Create user
     const { data: newUser, error } = await supabase

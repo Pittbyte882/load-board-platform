@@ -47,12 +47,16 @@ const AvatarInitials = React.forwardRef<
   }
 >(({ className, name, ...props }, ref) => {
   const getInitials = (name: string) => {
-    const names = name.trim().split(" ")
-    if (names.length === 1) {
-      return names[0].charAt(0).toUpperCase()
-    }
-    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase()
+  if (!name) return "?" // Handle undefined/null names
+  
+  const names = name.trim().split(" ")
+  
+  if (names.length === 1) {
+    return names[0].charAt(0).toUpperCase()
   }
+  
+  return names[0].charAt(0).toUpperCase() + names[names.length - 1].charAt(0).toUpperCase()
+}
 
   return (
     <AvatarFallback ref={ref} className={cn("bg-green-100 text-green-600 font-medium text-sm", className)} {...props}>

@@ -53,7 +53,6 @@ import {
   LogOut,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { supportStore, type SupportTicket } from "@/lib/support-store"
 
 interface AdminStats {
   totalUsers: number
@@ -109,6 +108,30 @@ interface PricingPlan {
   trialUsers?: number
 }
 
+interface SupportTicket {
+  id: string
+  subject: string
+  message: string
+  priority: "low" | "medium" | "high" | "urgent"
+  status: "open" | "in_progress" | "resolved" | "closed"
+  userId: string
+  userName: string
+  userEmail: string
+  userRole: "broker" | "carrier" | "dispatcher"
+  assignedTo?: string
+  createdAt: string
+  updatedAt: string
+  responses: Array<{
+    id: string
+    ticketId: string
+    senderId: string
+    senderName: string
+    senderType: "user" | "admin"
+    message: string
+    timestamp: string
+  }>
+}
+
 export function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -159,59 +182,46 @@ export function AdminDashboard() {
     maxTrialExtensionDays: 7,
   })
 
-  // Updated pricing plans data - single plan per user type with trial info
-  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([
-    // Single Carrier Plan
-    
-  ])
- useEffect(() => {
-  const fetchPricingPlans = async () => {
-    try {
-      const response = await fetch('/api/pricing', {
-        cache: 'no-store',
-      })
-      if (response.ok) {
-        const plans = await response.json()
-        setPricingPlans(plans)
+  // Updated pricing plans data
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([])
+
+  useEffect(() => {
+    const fetchPricingPlans = async () => {
+      try {
+        const response = await fetch('/api/pricing', {
+          cache: 'no-store',
+        })
+        if (response.ok) {
+          const plans = await response.json()
+          setPricingPlans(plans)
+        }
+      } catch (error) {
+        console.error('Error fetching pricing plans:', error)
       }
-    } catch (error) {
-      console.error('Error fetching pricing plans:', error)
     }
-  }
-  
-  fetchPricingPlans()
-}, [])
+    
+    fetchPricingPlans()
+  }, [])
 
   // Support management states
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([])
 
   useEffect(() => {
-    // Load all tickets from the store
-    const loadTickets = () => {
-      const allTickets = supportStore.getAllTickets()
-      setSupportTickets(allTickets)
-    }
-
-    loadTickets()
-
-    // Listen for new tickets and updates
-    const handleTicketCreated = () => loadTickets()
-    const handleTicketUpdated = () => loadTickets()
-    const handleResponseAdded = () => loadTickets()
-    const handleTicketAssigned = () => loadTickets()
-
-    window.addEventListener("supportTicketCreated", handleTicketCreated)
-    window.addEventListener("supportTicketUpdated", handleTicketUpdated)
-    window.addEventListener("supportResponseAdded", handleResponseAdded)
-    window.addEventListener("supportTicketAssigned", handleTicketAssigned)
-
-    return () => {
-      window.removeEventListener("supportTicketCreated", handleTicketCreated)
-      window.removeEventListener("supportTicketUpdated", handleTicketUpdated)
-      window.removeEventListener("supportResponseAdded", handleResponseAdded)
-      window.removeEventListener("supportTicketAssigned", handleTicketAssigned)
-    }
+    fetchSupportTickets()
   }, [])
+
+  // Fetch support tickets from real API
+  const fetchSupportTickets = async () => {
+    try {
+      const response = await fetch('/api/admin/support')
+      if (response.ok) {
+        const tickets = await response.json()
+        setSupportTickets(tickets)
+      }
+    } catch (error) {
+      console.error('Error fetching support tickets:', error)
+    }
+  }
 
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null)
   const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false)
@@ -245,30 +255,30 @@ export function AdminDashboard() {
   const fetchAdminData = async () => {
     try {
       // Fetch stats
-    const statsResponse = await fetch("/api/admin/stats")
-    if (statsResponse.ok) {
-      const statsData = await statsResponse.json()
-      console.log('📊 Received stats:', statsData) // Add this log
-      setStats(statsData)
-    } else {
-      console.error('Failed to fetch stats:', statsResponse.status)
+      const statsResponse = await fetch("/api/admin/stats")
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        console.log('📊 Received stats:', statsData)
+        setStats(statsData)
+      } else {
+        console.error('Failed to fetch stats:', statsResponse.status)
+      }
+
+      setIsLoading(false)
+    } catch (error) {
+      console.error("Failed to fetch admin data:", error)
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
-  } catch (error) {
-    console.error("Failed to fetch admin data:", error)
-    setIsLoading(false)
   }
-}
 
-useEffect(() => {
-  fetchAdminData()
-  
-  // Refresh stats every 30 seconds
-  const interval = setInterval(fetchAdminData, 30000)
-  
-  return () => clearInterval(interval)
-}, [])
+  useEffect(() => {
+    fetchAdminData()
+    
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchAdminData, 30000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   const handleEditPlan = (plan: PricingPlan) => {
     setEditingPlan({ ...plan })
@@ -319,7 +329,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("Error updating plan:", error)
-          showToastWithLogo({
+      showToastWithLogo({
         title: "Update Failed",
         message: "Failed to update plan. Please try again.",
         type: 'error'
@@ -352,11 +362,11 @@ useEffect(() => {
       setDeletingPlan(null)
 
       // Show success message
-     showToastWithLogo({
-          title: "Plan Deleted!",
-          message: "The plan has been successfully deleted.",
-          type: 'success'
-        })
+      showToastWithLogo({
+        title: "Plan Deleted!",
+        message: "The plan has been successfully deleted.",
+        type: 'success'
+      })
     }
   }
 
@@ -498,10 +508,10 @@ useEffect(() => {
         setIsDeleteUserDialogOpen(false)
         setDeletingUser(null)
         showToastWithLogo({
-        title: "User Deleted!",
-        message: "The user account has been permanently deleted.",
-        type: 'success'
-      })
+          title: "User Deleted!",
+          message: "The user account has been permanently deleted.",
+          type: 'success'
+        })
       } catch (error) {
         console.error("Error deleting user:", error)
         showToastWithLogo({
@@ -531,10 +541,10 @@ useEffect(() => {
       } catch (error) {
         console.error("Error updating user:", error)
         showToastWithLogo({
-        title: "Update Failed",
-        message: "Failed to update user. Please try again.",
-        type: 'error'
-      })
+          title: "Update Failed",
+          message: "Failed to update user. Please try again.",
+          type: 'error'
+        })
       }
     }
   }
@@ -559,47 +569,151 @@ useEffect(() => {
     }
   }
 
-  // Support management functions
+  // Updated support management functions
   const handleViewTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket)
     setIsTicketDialogOpen(true)
   }
 
-  const handleSendResponse = async () => {
-    if (!selectedTicket || !newResponse.trim()) return
+ const handleSendResponse = async () => {
+  if (!selectedTicket || !newResponse.trim()) return
 
-    supportStore.addResponse(selectedTicket.id, {
-      ticketId: selectedTicket.id,
-      senderId: "admin-current",
-      senderName: "Support Team",
-      senderType: "admin",
-      message: newResponse.trim(),
+  try {
+    const response = await fetch('/api/support/reply', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ticketId: selectedTicket.id,
+        senderId: 'f28b276d-3bc9-42f9-bcaa-75e577323ef5', // Your admin UUID
+        senderName: 'Support Team',
+        senderType: 'admin',
+        message: newResponse.trim(),
+      }),
     })
 
+    if (!response.ok) {
+      throw new Error('Failed to send response')
+    }
+
     setNewResponse("")
+    fetchSupportTickets() // Reload tickets
+    
     showToastWithLogo({
       title: "Response Sent!",
       message: "Your response has been sent to the customer.",
       type: 'success'
     })
-  }
-
-  const handleUpdateTicketStatus = async (ticketId: string, newStatus: SupportTicket["status"]) => {
-    supportStore.updateTicketStatus(ticketId, newStatus)
+  } catch (error) {
+    console.error('Error sending response:', error)
     showToastWithLogo({
-      title: "Status Updated!",
-      message: "Support ticket status has been updated.",
-      type: 'success'
+      title: "Send Failed",
+      message: "Failed to send response. Please try again.",
+      type: 'error'
     })
+  }
+}
+
+  const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
+    try {
+      const response = await fetch('/api/admin/support/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ticketId,
+          status: newStatus
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update ticket status')
+      }
+
+      fetchSupportTickets() // Reload tickets
+      
+      showToastWithLogo({
+        title: "Status Updated!",
+        message: "Support ticket status has been updated.",
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error updating ticket status:', error)
+      showToastWithLogo({
+        title: "Update Failed",
+        message: "Failed to update ticket status. Please try again.",
+        type: 'error'
+      })
+    }
   }
 
   const handleAssignTicket = async (ticketId: string, assignee: string) => {
-    supportStore.assignTicket(ticketId, assignee)
-    showToastWithLogo({
-      title: "Ticket Assigned!",
-      message: "Support ticket has been successfully assigned.",
-      type: 'success'
-    })
+    try {
+      const response = await fetch('/api/admin/support/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ticketId,
+          assignedTo: assignee
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to assign ticket')
+      }
+
+      fetchSupportTickets() // Reload tickets
+      
+      showToastWithLogo({
+        title: "Ticket Assigned!",
+        message: "Support ticket has been successfully assigned.",
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error assigning ticket:', error)
+      showToastWithLogo({
+        title: "Assignment Failed",
+        message: "Failed to assign ticket. Please try again.",
+        type: 'error'
+      })
+    }
+  }
+
+  // New function for deleting tickets
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to delete this support ticket? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/support?ticketId=${ticketId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete ticket')
+      }
+
+      fetchSupportTickets() // Reload tickets
+      setIsTicketDialogOpen(false) // Close dialog if open
+      
+      showToastWithLogo({
+        title: "Ticket Deleted!",
+        message: "Support ticket has been permanently deleted.",
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error deleting ticket:', error)
+      showToastWithLogo({
+        title: "Delete Failed", 
+        message: "Failed to delete ticket. Please try again.",
+        type: 'error'
+      })
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -716,24 +830,24 @@ useEffect(() => {
 
   return (
     <div className="p-6 space-y-6">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3">
-      <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-      <Badge className="bg-red-100 text-red-800">Admin Access</Badge>
-    </div>
-    <Button
-      variant="outline"
-      onClick={() => {
-        // Clear auth and redirect to login
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-      }}
-      className="flex items-center gap-2"
-    >
-      <LogOut className="h-4 w-4" />
-      Logout
-    </Button>
-  </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <Badge className="bg-red-100 text-red-800">Admin Access</Badge>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            // Clear auth and redirect to login
+            localStorage.removeItem('user')
+            window.location.href = '/login'
+          }}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+      </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -789,343 +903,343 @@ useEffect(() => {
       </div>
 
       {/* Main Content Tabs */}
-<Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-  <TabsList>
-    <TabsTrigger value="users">Users</TabsTrigger>
-    <TabsTrigger value="loads">Loads</TabsTrigger>
-    <TabsTrigger value="pricing">Pricing</TabsTrigger>
-    <TabsTrigger value="support">Support</TabsTrigger>
-    <TabsTrigger value="settings">Settings</TabsTrigger>
-    <TabsTrigger value="analytics">Analytics</TabsTrigger>
-  </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="loads">Loads</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
 
-  <TabsContent value="users">
-    <AdminUsers />
-  </TabsContent>
+        <TabsContent value="users">
+          <AdminUsers />
+        </TabsContent>
 
-  <TabsContent value="loads">
-    <AdminLoads />
-  </TabsContent>
+        <TabsContent value="loads">
+          <AdminLoads />
+        </TabsContent>
 
-  <TabsContent value="pricing" className="space-y-4">
-    <Card>
-      <CardHeader>
-        <CardTitle>Pricing Management</CardTitle>
-        <CardDescription>Manage subscription plans and pricing</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6">
-          {pricingPlans.map((plan) => (
-            <div key={plan.id} className="border rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{plan.name}</h3>
-                  <p className="text-gray-600">{plan.description}</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <Badge variant="outline">Per User</Badge>
-                  <Button variant="outline" size="sm" onClick={() => handleEditPlan(plan)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </div>
-              </div>
+        <TabsContent value="pricing" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pricing Management</CardTitle>
+              <CardDescription>Manage subscription plans and pricing</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6">
+                {pricingPlans.map((plan) => (
+                  <div key={plan.id} className="border rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">{plan.name}</h3>
+                        <p className="text-gray-600">{plan.description}</p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Badge variant="outline">Per User</Badge>
+                        <Button variant="outline" size="sm" onClick={() => handleEditPlan(plan)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">${plan.monthlyPrice}</div>
-                  <div className="text-sm text-gray-500">per month per user</div>
-                </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{plan.trialDays}</div>
-                  <div className="text-sm text-blue-500">trial days</div>
-                </div>
-              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900">${plan.monthlyPrice}</div>
+                        <div className="text-sm text-gray-500">per month per user</div>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{plan.trialDays}</div>
+                        <div className="text-sm text-blue-500">trial days</div>
+                      </div>
+                    </div>
 
-              <div className="text-sm text-gray-600">
-                <strong>Features:</strong> {plan.features.length} features included
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  </TabsContent>
-
-  <TabsContent value="support" className="space-y-4">
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Support Tickets</CardTitle>
-            <CardDescription>Manage customer support requests and communications</CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search tickets..."
-                value={ticketSearch}
-                onChange={(e) => setTicketSearch(e.target.value)}
-                className="pl-10 w-64"
-              />
-            </div>
-            <Select value={ticketFilter} onValueChange={(value: any) => setTicketFilter(value)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {filteredTickets.map((ticket) => (
-            <div
-              key={ticket.id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                  <Package className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{ticket.subject}</h4>
-                    <Badge className={getStatusColor(ticket.status)}>{ticket.status.replace("_", " ")}</Badge>
-                    <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
-                    <Badge className={getRoleColor(ticket.userRole)}>{ticket.userRole}</Badge>
+                    <div className="text-sm text-gray-600">
+                      <strong>Features:</strong> {plan.features.length} features included
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    From: {ticket.userName} ({ticket.userEmail})
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Created: {ticket.createdAt} • Updated: {ticket.updatedAt}
-                    {ticket.assignedTo && ` • Assigned to: ${ticket.assignedTo}`}
-                  </p>
-                  <p className="text-sm text-gray-700 mt-2 line-clamp-2">{ticket.message}</p>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="support" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Support Tickets</CardTitle>
+                  <CardDescription>Manage customer support requests and communications</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search tickets..."
+                      value={ticketSearch}
+                      onChange={(e) => setTicketSearch(e.target.value)}
+                      className="pl-10 w-64"
+                    />
+                  </div>
+                  <Select value={ticketFilter} onValueChange={(value: any) => setTicketFilter(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleViewTicket(ticket)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, "in_progress")}>
-                      Mark In Progress
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, "resolved")}>
-                      Mark Resolved
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, "closed")}>
-                      Close Ticket
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAssignTicket(ticket.id, "Support Team")}>
-                      Assign to Support
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
+                        <Package className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{ticket.subject}</h4>
+                          <Badge className={getStatusColor(ticket.status)}>{ticket.status.replace("_", " ")}</Badge>
+                          <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                          <Badge className={getRoleColor(ticket.userRole)}>{ticket.userRole}</Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          From: {ticket.userName} ({ticket.userEmail})
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Created: {ticket.createdAt} • Updated: {ticket.updatedAt}
+                          {ticket.assignedTo && ` • Assigned to: ${ticket.assignedTo}`}
+                        </p>
+                        <p className="text-sm text-gray-700 mt-2 line-clamp-2">{ticket.message}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleViewTicket(ticket)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, "in_progress")}>
+                            Mark In Progress
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, "resolved")}>
+                            Mark Resolved
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, "closed")}>
+                            Close Ticket
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleAssignTicket(ticket.id, "Support Team")}>
+                            Assign to Support
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+                {filteredTickets.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">No support tickets found matching your criteria.</div>
+                )}
               </div>
-            </div>
-          ))}
-          {filteredTickets.length === 0 && (
-            <div className="text-center py-8 text-gray-500">No support tickets found matching your criteria.</div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  </TabsContent>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-  <TabsContent value="settings" className="space-y-4">
-    <Card>
-      <CardHeader>
-        <CardTitle>Platform Settings</CardTitle>
-        <CardDescription>Configure global platform settings and preferences</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">General Settings</h3>
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Settings</CardTitle>
+              <CardDescription>Configure global platform settings and preferences</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">General Settings</h3>
 
-            <div className="space-y-2">
-              <Label htmlFor="siteName">Site Name</Label>
-              <Input
-                id="siteName"
-                value={platformSettings.siteName}
-                onChange={(e) => setPlatformSettings({ ...platformSettings, siteName: e.target.value })}
-              />
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="siteName">Site Name</Label>
+                    <Input
+                      id="siteName"
+                      value={platformSettings.siteName}
+                      onChange={(e) => setPlatformSettings({ ...platformSettings, siteName: e.target.value })}
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="siteDescription">Site Description</Label>
-              <Textarea
-                id="siteDescription"
-                value={platformSettings.siteDescription}
-                onChange={(e) => setPlatformSettings({ ...platformSettings, siteDescription: e.target.value })}
-                rows={3}
-              />
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="siteDescription">Site Description</Label>
+                    <Textarea
+                      id="siteDescription"
+                      value={platformSettings.siteDescription}
+                      onChange={(e) => setPlatformSettings({ ...platformSettings, siteDescription: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="maintenanceMode"
-                checked={platformSettings.maintenanceMode}
-                onCheckedChange={(checked) =>
-                  setPlatformSettings({ ...platformSettings, maintenanceMode: checked })
-                }
-              />
-              <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
-            </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="maintenanceMode"
+                      checked={platformSettings.maintenanceMode}
+                      onCheckedChange={(checked) =>
+                        setPlatformSettings({ ...platformSettings, maintenanceMode: checked })
+                      }
+                    />
+                    <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
+                  </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="registrationEnabled"
-                checked={platformSettings.registrationEnabled}
-                onCheckedChange={(checked) =>
-                  setPlatformSettings({ ...platformSettings, registrationEnabled: checked })
-                }
-              />
-              <Label htmlFor="registrationEnabled">Allow New Registrations</Label>
-            </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="registrationEnabled"
+                      checked={platformSettings.registrationEnabled}
+                      onCheckedChange={(checked) =>
+                        setPlatformSettings({ ...platformSettings, registrationEnabled: checked })
+                      }
+                    />
+                    <Label htmlFor="registrationEnabled">Allow New Registrations</Label>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Trial Settings</h3>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="trialExtensionEnabled"
+                      checked={platformSettings.trialExtensionEnabled}
+                      onCheckedChange={(checked) =>
+                        setPlatformSettings({ ...platformSettings, trialExtensionEnabled: checked })
+                      }
+                    />
+                    <Label htmlFor="trialExtensionEnabled">Allow Trial Extensions</Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="maxTrialExtensionDays">Max Trial Extension (days)</Label>
+                    <Input
+                      id="maxTrialExtensionDays"
+                      type="number"
+                      value={platformSettings.maxTrialExtensionDays}
+                      onChange={(e) =>
+                        setPlatformSettings({
+                          ...platformSettings,
+                          maxTrialExtensionDays: Number.parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="emailNotifications"
+                      checked={platformSettings.emailNotifications}
+                      onCheckedChange={(checked) =>
+                        setPlatformSettings({ ...platformSettings, emailNotifications: checked })
+                      }
+                    />
+                    <Label htmlFor="emailNotifications">Email Notifications</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="smsNotifications"
+                      checked={platformSettings.smsNotifications}
+                      onCheckedChange={(checked) =>
+                        setPlatformSettings({ ...platformSettings, smsNotifications: checked })
+                      }
+                    />
+                    <Label htmlFor="smsNotifications">SMS Notifications</Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                    <Input
+                      id="sessionTimeout"
+                      type="number"
+                      value={platformSettings.sessionTimeout}
+                      onChange={(e) =>
+                        setPlatformSettings({
+                          ...platformSettings,
+                          sessionTimeout: Number.parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex justify-end">
+                <Button onClick={handleSaveSettings}>Save Settings</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Trial Conversion Rate</CardTitle>
+                <CardDescription>Trial to paid subscription conversion</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center text-gray-500">
+                  Trial conversion analytics chart would go here
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>User Growth</CardTitle>
+                <CardDescription>New user registrations over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center text-gray-500">Analytics chart would go here</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Trends</CardTitle>
+                <CardDescription>Platform revenue over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center text-gray-500">Analytics chart would go here</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Trial Activity</CardTitle>
+                <CardDescription>Trial user engagement metrics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center text-gray-500">Analytics chart would go here</div>
+              </CardContent>
+            </Card>
           </div>
-
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Trial Settings</h3>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="trialExtensionEnabled"
-                checked={platformSettings.trialExtensionEnabled}
-                onCheckedChange={(checked) =>
-                  setPlatformSettings({ ...platformSettings, trialExtensionEnabled: checked })
-                }
-              />
-              <Label htmlFor="trialExtensionEnabled">Allow Trial Extensions</Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="maxTrialExtensionDays">Max Trial Extension (days)</Label>
-              <Input
-                id="maxTrialExtensionDays"
-                type="number"
-                value={platformSettings.maxTrialExtensionDays}
-                onChange={(e) =>
-                  setPlatformSettings({
-                    ...platformSettings,
-                    maxTrialExtensionDays: Number.parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="emailNotifications"
-                checked={platformSettings.emailNotifications}
-                onCheckedChange={(checked) =>
-                  setPlatformSettings({ ...platformSettings, emailNotifications: checked })
-                }
-              />
-              <Label htmlFor="emailNotifications">Email Notifications</Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="smsNotifications"
-                checked={platformSettings.smsNotifications}
-                onCheckedChange={(checked) =>
-                  setPlatformSettings({ ...platformSettings, smsNotifications: checked })
-                }
-              />
-              <Label htmlFor="smsNotifications">SMS Notifications</Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-              <Input
-                id="sessionTimeout"
-                type="number"
-                value={platformSettings.sessionTimeout}
-                onChange={(e) =>
-                  setPlatformSettings({
-                    ...platformSettings,
-                    sessionTimeout: Number.parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="flex justify-end">
-          <Button onClick={handleSaveSettings}>Save Settings</Button>
-        </div>
-      </CardContent>
-    </Card>
-  </TabsContent>
-
-  <TabsContent value="analytics" className="space-y-4">
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Trial Conversion Rate</CardTitle>
-          <CardDescription>Trial to paid subscription conversion</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            Trial conversion analytics chart would go here
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>User Growth</CardTitle>
-          <CardDescription>New user registrations over time</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-gray-500">Analytics chart would go here</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Revenue Trends</CardTitle>
-          <CardDescription>Platform revenue over time</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-gray-500">Analytics chart would go here</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Trial Activity</CardTitle>
-          <CardDescription>Trial user engagement metrics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-gray-500">Analytics chart would go here</div>
-        </CardContent>
-      </Card>
-    </div>
-  </TabsContent>
-</Tabs>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Plan Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -1720,7 +1834,7 @@ useEffect(() => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarInitials name={selectedTicket.userName} />
+                        <AvatarInitials name={selectedTicket.userName || 'Unknown User'} />
                       </Avatar>
                       <div>
                         <p className="font-medium">{selectedTicket.userName}</p>
@@ -1772,7 +1886,7 @@ useEffect(() => {
                   <div className="flex items-center gap-2">
                     <Select
                       value={selectedTicket.status}
-                      onValueChange={(value: SupportTicket["status"]) =>
+                      onValueChange={(value: string) =>
                         handleUpdateTicketStatus(selectedTicket.id, value)
                       }
                     >
@@ -1795,9 +1909,15 @@ useEffect(() => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTicketDialogOpen(false)}>
-              Close
-            </Button>
+            <div className="flex justify-between w-full">
+              <Button variant="outline" onClick={() => handleDeleteTicket(selectedTicket!.id)} className="text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Ticket
+              </Button>
+              <Button variant="outline" onClick={() => setIsTicketDialogOpen(false)}>
+                Close
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

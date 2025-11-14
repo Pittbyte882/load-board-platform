@@ -231,7 +231,47 @@ export async function POST(request: Request) {
       default:
         console.log(`📧 Email type ${type} not yet implemented`)
         return NextResponse.json({ success: true, message: 'Email type not yet implemented' })
-    }
+   
+        case 'support-reply':
+  subject = `Re: ${data.ticketSubject} - Support Team Response`
+  emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+      </head>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb; text-align: center;">Support Team Response 💬</h1>
+        
+        <p>Hi ${data.userName},</p>
+        
+        <p>Our support team has responded to your ticket: <strong>${data.ticketSubject}</strong></p>
+        
+        <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;">
+          <p><strong>Response from ${data.supportTeamName}:</strong></p>
+          <p style="color: #333;">${data.replyMessage.replace(/\n/g, '<br>')}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a 
+            href="${data.ticketUrl}"
+            style="background-color: #2563eb; color: white; padding: 12px 32px; text-decoration: none; border-radius: 5px; display: inline-block;"
+          >
+            View Full Conversation
+          </a>
+        </div>
+        
+        <p>You can reply to this ticket by logging into your dashboard.</p>
+        
+        <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+        <p style="color: #6c757d; font-size: 12px; text-align: center;">
+          This email was sent regarding support ticket in your BOXALOO account.
+        </p>
+      </body>
+    </html>
+  `
+  break
+      }
 
     console.log('📧 Sending email with HTML length:', emailHtml.length)
 
