@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get('userId')
-    
+    console.log('🔍 Fetching conversations for userId:', userId)
+
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }
@@ -16,11 +17,18 @@ export async function GET(request: NextRequest) {
       .select('conversation_id')
       .eq('user_id', userId)
 
-    if (participantError) throw participantError
+      console.log('📋 Participant data:', participantData)
 
-    const conversationIds = participantData.map(p => p.conversation_id)
+    if (participantError) {
+      console.error('❌ Participant error:', participantError)
+      throw participantError
+    }
+
+     const conversationIds = participantData.map(p => p.conversation_id)
+    console.log('📋 Conversation IDs:', conversationIds)
 
     if (conversationIds.length === 0) {
+      console.log('⚠️ No conversation IDs found for user')
       return NextResponse.json({ conversations: [] })
     }
 

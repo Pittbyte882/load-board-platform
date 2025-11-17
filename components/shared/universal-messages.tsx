@@ -51,18 +51,68 @@ export function UniversalMessages({ userRole, filterOptions, subtitle }: Univers
   const [isDeleteConversationDialogOpen, setIsDeleteConversationDialogOpen] = useState(false)
 
   // Fetch conversations on mount
-  useEffect(() => {
-    if (user) {
-      fetchConversations(user.id)
-    }
-  }, [user, fetchConversations])
+useEffect(() => {
+  if (user) {
+    console.log('🔍 Fetching conversations for user:', user.id)  
+    fetchConversations(user.id)
+  }
+}, [user, fetchConversations])
 
-  // Fetch messages when conversation is selected
-  useEffect(() => {
-    if (selectedConversationId) {
-      fetchMessages(selectedConversationId)
+// Add this new useEffect right after the above one:
+useEffect(() => {
+  if (user) {
+    const userConversations = getConversationsForUser(user.id)
+    console.log('📋 Current conversations in store:', userConversations)
+    console.log('📋 Number of conversations:', userConversations.length)
+  }
+}, [user, getConversationsForUser])
+
+// Fetch messages when conversation is selected
+useEffect(() => {
+  if (selectedConversationId) {
+    fetchMessages(selectedConversationId)
+  }
+}, [selectedConversationId, fetchMessages])
+
+// useEffect to listen for dashboard tab changes
+useEffect(() => {
+  const handleTabChange = (event: any) => {
+    if (event.detail.tab === "messages" && user) {
+      console.log('🔄 Messages tab opened, fetching conversations...')
+      
+      // Force refresh immediately
+      fetchConversations(user.id)
+      
+      // If a specific conversation ID is provided, try multiple times to select it
+      if (event.detail.conversationId) {
+        console.log('🎯 Auto-selecting conversation:', event.detail.conversationId)
+        
+        // Try to select the conversation multiple times with increasing delays
+        const attemptSelection = (attempt = 1) => {
+          setTimeout(() => {
+            const conversations = getConversationsForUser(user.id)
+            const targetConv = conversations.find(conv => conv.id === event.detail.conversationId)
+            
+            if (targetConv) {
+              console.log(`✅ Found conversation on attempt ${attempt}`)
+              setSelectedConversationId(event.detail.conversationId)
+            } else if (attempt < 5) {
+              console.log(`❌ Conversation not found, attempt ${attempt}, retrying...`)
+              fetchConversations(user.id) // Refresh again
+              attemptSelection(attempt + 1)
+            }
+          }, attempt * 500)
+        }
+        
+        attemptSelection()
+      }
     }
-  }, [selectedConversationId, fetchMessages])
+  }
+
+  window.addEventListener("dashboardTabChange", handleTabChange)
+  return () => window.removeEventListener("dashboardTabChange", handleTabChange)
+}, [user, fetchConversations, getConversationsForUser])
+
 
   // Get conversations for current user
   const conversations = user ? getConversationsForUser(user.id) : []
@@ -222,18 +272,26 @@ export function UniversalMessages({ userRole, filterOptions, subtitle }: Univers
   }
 
   return (
+
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Messages</h1>
-          <p className="text-gray-600">{subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">
-            {conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)} unread
-          </Badge>
-        </div>
-      </div>
+  <div>
+    <h1 className="text-3xl font-bold">Messages</h1>
+    <p className="text-gray-600">{subtitle}</p>
+  </div>
+  <div className="flex items-center gap-2">
+    <Badge variant="secondary">
+      {conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)} unread
+    </Badge>
+    <Button 
+      onClick={() => user && fetchConversations(user.id)} 
+      variant="outline" 
+      size="sm"
+    >
+      Refresh Conversations
+    </Button>
+  </div>
+</div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
         {/* Conversations List */}

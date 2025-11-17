@@ -121,21 +121,31 @@ export function AvailableTrucks() {
           dotNumber: truck.dotNumber,
           mcNumber: truck.mcNumber,
         },
+        skipInitialMessage: true
       }),
     })
 
     if (response.ok) {
       const data = await response.json()
       console.log('✅ Conversation created:', data.conversationId)
+
+       // Show success message
+          showToastWithLogo({
+            title: "Ready to Message",
+            message: `Opening conversation with ${truck.carrierName}`,
+            type: 'success'
+          })
       
       // Navigate to messages tab
-      const event = new CustomEvent("dashboardTabChange", {
-        detail: {
-          tab: "messages",
-          conversationId: data.conversationId
-        },
-      })
-      window.dispatchEvent(event)
+      
+const event = new CustomEvent("dashboardTabChange", {
+  detail: {
+    tab: "messages",
+    conversationId: data.conversationId,
+    forceRefresh: true  // This will trigger the refresh
+  },
+})
+window.dispatchEvent(event)
     } else {
       showToastWithLogo({
         title: "Connection Failed",

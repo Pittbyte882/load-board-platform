@@ -325,7 +325,7 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
         </Card>
 
         {/* Multiple Stops */}
-        <Card>
+        {/*<Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
@@ -498,40 +498,45 @@ export function PostLoadForm({ onSuccess }: PostLoadFormProps) {
         </Card>
 
         {/* Rate Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Rate Information
-            </CardTitle>
-            <CardDescription>Set the payment rate for this load</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rate">Total Rate ($) *</Label>
-              <Input
-                id="rate"
-                type="number"
-                placeholder="e.g., 1800"
-                value={formData.rate}
-                onChange={(e) => handleInputChange("rate", e.target.value)}
-                required
-              />
-              {formData.rate && estimatedDistance && (
-                <p className="text-sm text-gray-600">
-                  Estimated rate per mile: $
-                  {(Number.parseInt(formData.rate) / estimatedDistance).toFixed(2)}
-                  /mile
-                </p>
-              )}
-              {formData.origin && formData.destination && !estimatedDistance && (
-                <p className="text-sm text-gray-400">
-                  Calculating distance...
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <DollarSign className="h-5 w-5" />
+      Rate Information
+    </CardTitle>
+    <CardDescription>Set the payment rate for this load</CardDescription>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="rate">Total Rate ($) *</Label>
+        <Input
+          id="rate"
+          type="number"
+          placeholder="e.g., 1800"
+          value={formData.rate}
+          onChange={(e) => handleInputChange("rate", e.target.value)}
+          required
+        />
+        {formData.rate && estimatedDistance && (
+          <p className="text-sm text-gray-600">
+            Estimated rate per mile: $
+            {(Number.parseInt(formData.rate) / estimatedDistance).toFixed(2)}
+            /mile
+          </p>
+        )}
+        {formData.origin && formData.destination && !estimatedDistance && (
+          <p className="text-sm text-gray-400">
+            Calculating distance...
+          </p>
+        )}
+      </div>
+      <div>
+        {/* Second column - you can add another field here later if needed */}
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
         {/* Additional Options */}
         <Card>

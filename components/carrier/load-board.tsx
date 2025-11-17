@@ -163,67 +163,78 @@ export function LoadBoard() {
     setShowNegotiateModal(true)
   }
 
-  const submitNegotiation = async () => {
-    if (!selectedLoad || !counterOffer) return
+ const submitNegotiation = async () => {
+  if (!selectedLoad || !counterOffer) return
 
-    if (!user) {
-      showToastWithLogo({
+  if (!user) {
+    showToastWithLogo({
       title: "Login Required",
       message: "Please log in to negotiate loads.",
       type: 'info'
     })
-      return
-    }
+    return
+  }
+console.log('🔍 Available load fields:', Object.keys(selectedLoad))
+console.log('🔍 Full selectedLoad object:', selectedLoad)
+  const message = (document.getElementById('negotiation-message') as HTMLTextAreaElement)?.value
 
-    const message = (document.getElementById('negotiation-message') as HTMLTextAreaElement)?.value
+  // Add debugging payload
+  const payload = {
+  loadId: selectedLoad.id,
+  negotiatorId: user.id,
+  negotiatorName: `${user.firstName} ${user.lastName}`,
+  negotiatorCompany: user.companyName,
+  negotiatorRole: 'carrier',
+  brokerId: selectedLoad.brokerId,
+  brokerName: selectedLoad.brokerName,
+  brokerCompany: selectedLoad.brokerCompany,
+  originalRate: selectedLoad.rate,
+  counterOffer: Number(counterOffer),
+  message,
+  pickupLocation: selectedLoad.pickupLocation,
+  deliveryLocation: selectedLoad.deliveryLocation
+}
+  
+  console.log('📤 Sending negotiation payload:', payload)
 
-    try {
-      const response = await fetch('/api/loads/negotiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          loadId: selectedLoad.id,
-          negotiatorId: user.id,
-          negotiatorName: `${user.firstName} ${user.lastName}`,
-          negotiatorCompany: user.companyName,
-          negotiatorRole: 'carrier',
-          brokerId: selectedLoad.brokerId,
-          brokerName: selectedLoad.brokerName,
-          brokerCompany: selectedLoad.brokerCompany,
-          originalRate: selectedLoad.rate,
-          counterOffer: Number(counterOffer),
-          message,
-          pickupLocation: selectedLoad.pickupLocation,
-          deliveryLocation: selectedLoad.deliveryLocation
-        })
-      })
+  try {
+    const response = await fetch('/api/loads/negotiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
 
-      if (response.ok) {
-        showToastWithLogo({
+    console.log('📥 Response status:', response.status)
+
+    if (response.ok) {
+      const responseData = await response.json()
+      console.log('📥 Response data:', responseData)
+      showToastWithLogo({
         title: "Negotiation Sent!",
         message: `Your offer has been sent to ${selectedLoad.brokerCompany}.`,
         type: 'success'
       })
-        setShowNegotiateModal(false)
-        setSelectedLoad(null)
-        setCounterOffer("")
-      } else {
-        showToastWithLogo({
+      setShowNegotiateModal(false)
+      setSelectedLoad(null)
+      setCounterOffer("")
+    } else {
+      const errorData = await response.text()
+      console.log('❌ Error response:', errorData)
+      showToastWithLogo({
         title: "Send Failed",
         message: "Failed to send negotiation. Please try again.",
         type: 'error'
       })
-      }
-    } catch (error) {
-      console.error('Error submitting negotiation:', error)
-      showToastWithLogo({
+    }
+  } catch (error) {
+    console.error('❌ Network error:', error)
+    showToastWithLogo({
       title: "Error Occurred",
       message: "An error occurred. Please try again.",
       type: 'error'
     })
-    }
   }
-
+}
   const handleAcceptLoad = async (load: Load) => {
     if (!user) {
       showToastWithLogo({

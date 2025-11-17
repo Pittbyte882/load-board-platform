@@ -288,49 +288,76 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
   }
 
   const handleSaveEdit = async () => {
-    if (!selectedLoad) return
+  console.log('🔥 Frontend: Starting handleSaveEdit')
+  console.log('🔥 Selected load ID:', selectedLoad?.id)
+  
+  if (!selectedLoad) {
+    console.log('❌ No selected load!')
+    return
+  }
 
-    try {
-      const updatedLoad = {
-        ...selectedLoad,
-        ...editForm,
-        pickupDate: editForm.pickupDate + "T00:00:00.000Z",
-        deliveryDate: editForm.deliveryDate + "T00:00:00.000Z",
-      }
+  console.log('🔥 editForm data:', editForm)
 
-      const response = await fetch(`/api/loads/${selectedLoad.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedLoad),
-      })
+  try {
+    const updatedLoad = {
+      origin: editForm.origin,
+      destination: editForm.destination,
+      rate: editForm.rate,
+      weight: editForm.weight,
+      description: editForm.description,
+      equipment: editForm.equipment,
+      expedited: editForm.expedited,
+      hazmat: editForm.hazmat,
+      pickupDate: editForm.pickupDate + "T00:00:00.000Z",
+      deliveryDate: editForm.deliveryDate + "T00:00:00.000Z",
+    }
 
-      if (response.ok) {
-        setLoads((prev) => prev.map((load) => (load.id === selectedLoad.id ? updatedLoad : load)))
-        setShowEditModal(false)
-        showToastWithLogo({
-          title: "Load Updated!",
-          message: "Load has been successfully updated.",
-          type: 'success'
-        })
-      } else {
-        showToastWithLogo({
-          title: "Update Failed",
-          message: "Failed to update load. Please try again.",
-          type: 'error'
-        })
-      }
-    } catch (error) {
-      console.error("Error updating load:", error)
+    console.log('🔥 updatedLoad created:', updatedLoad)
+    console.log('🔥 About to make fetch request to:', `/api/loads/${selectedLoad.id}`)
+
+    const response = await fetch(`/api/loads/${selectedLoad.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updatedLoad),
+    })
+
+    console.log('🔥 Response received:', response)
+    console.log('🔥 Response status:', response.status)
+    console.log('🔥 Response ok:', response.ok)
+
+    if (response.ok) {
+      console.log('🔥 Response was ok, updating state')
+      setLoads((prev) => prev.map((load) => 
+        load.id === selectedLoad.id ? { ...load, ...editForm } : load
+      ))
+      
+      setShowEditModal(false)
       showToastWithLogo({
-        title: "Update Failed", 
-        message: "Error updating load. Please try again.",
+        title: "Load Updated!",
+        message: "Load has been successfully updated.",
+        type: 'success'
+      })
+    } else {
+      console.log('🔥 Response failed, getting error data')
+      const errorData = await response.json()
+      console.error('🔥 Update failed:', errorData)
+      showToastWithLogo({
+        title: "Update Failed",
+        message: "Failed to update load. Please try again.",
         type: 'error'
       })
     }
+  } catch (error) {
+    console.error("🔥 Caught error:", error)
+    showToastWithLogo({
+      title: "Update Failed", 
+      message: "Error updating load. Please try again.",
+      type: 'error'
+    })
   }
-
+}
   const handleChat = (load: Load) => {
     setSelectedLoad(load)
     // Load existing chat history for this load
