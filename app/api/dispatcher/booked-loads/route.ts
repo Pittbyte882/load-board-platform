@@ -20,8 +20,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
 
-    // Fetch all load acceptances for this dispatcher
-    // Join with loads table to get full load details
+    console.log('📋 Fetching booked loads for dispatcher:', userId)
+
+    // FETCH FROM BOTH TABLES
+
+    // 1. Get bookings from load_bookings (negotiation flow)
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('load_bookings')
+      .select('*')
+      .eq('carrier_id', userId)
+      .order('booked_at', { ascending: false })
+
+    if (bookingsError) {
+      console.error('Error fetching load bookings:', bookingsError)
+    }
+
+    // 2. Get acceptances from load_acceptances (direct acceptance flow)
     const { data: acceptances, error: acceptancesError } = await supabase
       .from('load_acceptances')
       .select('*')
@@ -30,22 +44,25 @@ export async function GET(request: NextRequest) {
 
     if (acceptancesError) {
       console.error('Error fetching load acceptances:', acceptancesError)
-      throw acceptancesError
     }
 
-    // If no acceptances found, return empty array
-    if (!acceptances || acceptances.length === 0) {
+    console.log(`Found ${bookings?.length || 0} bookings and ${acceptances?.length || 0} acceptances`)
+
+    // Get all unique load IDs from BOTH sources
+    const loadIdsFromBookings = (bookings || []).map(b => b.load_id)
+    const loadIdsFromAcceptances = (acceptances || []).map(a => a.load_id)
+    const allLoadIds = [...new Set([...loadIdsFromBookings, ...loadIdsFromAcceptances])]
+
+    if (allLoadIds.length === 0) {
+      console.log('No loads found')
       return NextResponse.json([])
     }
 
-    // Get all unique load IDs
-    const loadIds = acceptances.map(acc => acc.load_id)
-
-    // Fetch full load details for all accepted loads
+    // Fetch full load details
     const { data: loads, error: loadsError } = await supabase
       .from('loads')
       .select('*')
-      .in('id', loadIds)
+      .in('id', allLoadIds)
 
     if (loadsError) {
       console.error('Error fetching loads:', loadsError)
@@ -58,48 +75,88 @@ export async function GET(request: NextRequest) {
       loads.forEach(load => loadsMap.set(load.id, load))
     }
 
-    // Combine acceptance data with load data
-    const bookedLoads = acceptances.map(acceptance => {
-      const load = loadsMap.get(acceptance.load_id)
-      
-      return {
-        // Acceptance fields
-        id: acceptance.id,
-        load_id: acceptance.load_id,
-        broker_id: acceptance.broker_id,
-        accepted_rate: acceptance.accepted_rate,
-        approval_status: acceptance.approval_status,
-        accepted_at: acceptance.accepted_at,
-        approved_at: acceptance.approved_at,
-        accepted_by_phone: acceptance.accepted_by_phone,
-        accepted_by_mc_number: acceptance.accepted_by_mc_number,
-        
-        // Load fields (with fallbacks if load not found)
-        broker_name: load?.broker_name || 'N/A',
-        broker_company: load?.broker_company || 'N/A',
-        broker_mc: load?.broker_mc || 'N/A',
-        origin: load?.origin || 'N/A',
-        destination: load?.destination || 'N/A',
-        pickup_location: load?.pickup_location || 'N/A',
-        delivery_location: load?.delivery_location || 'N/A',
-        pickup_date: load?.pickup_date || new Date().toISOString(),
-        delivery_date: load?.delivery_date || new Date().toISOString(),
-        weight: load?.weight || 0,
-        distance: load?.distance || 0,
-        equipment_type: load?.equipment_type || 'N/A',
-        load_type: load?.load_type || 'N/A',
-        description: load?.description || '',
-        expedited: load?.expedited || false,
-        hazmat: load?.hazmat || false,
-        team_driver: load?.team_driver || false,
-      }
-    })
+    // COMBINE BOTH SOURCES INTO ONE LIST
+    const bookedLoads: any[] = []
 
-    console.log(`Fetched ${bookedLoads.length} booked loads for dispatcher ${userId}`)
+    // Add bookings from load_bookings
+    if (bookings && bookings.length > 0) {
+      bookings.forEach(booking => {
+        const load = loadsMap.get(booking.load_id)
+        bookedLoads.push({
+          id: booking.id,
+          load_id: booking.load_id,
+          broker_id: booking.broker_id,
+          broker_name: booking.broker_name,
+          broker_company: booking.broker_company,
+          broker_mc: load?.broker_mc_number || load?.broker_mc || 'N/A',
+          accepted_rate: booking.booked_rate,
+          approval_status: 'approved',
+          accepted_at: booking.booked_at,
+          approved_at: booking.booked_at,
+          source: 'negotiation',
+          origin: load?.origin,
+          destination: load?.destination,
+          pickup_location: load?.pickup_location,
+          delivery_location: load?.delivery_location,
+          pickup_date: load?.pickup_date,
+          delivery_date: load?.delivery_date,
+          weight: load?.weight,
+          distance: load?.distance,
+          equipment_type: load?.equipment_type || load?.equipment,
+          load_type: load?.load_type,
+          description: load?.description,
+          expedited: load?.expedited,
+          hazmat: load?.hazmat,
+          team_driver: load?.team_driver,
+        })
+      })
+    }
+
+    // Add acceptances from load_acceptances
+    if (acceptances && acceptances.length > 0) {
+      acceptances.forEach(acceptance => {
+        const load = loadsMap.get(acceptance.load_id)
+        bookedLoads.push({
+          id: acceptance.id,
+          load_id: acceptance.load_id,
+          broker_id: acceptance.broker_id,
+          broker_name: load?.broker_name || 'N/A',
+          broker_company: load?.broker_company || 'N/A',
+          broker_mc: load?.broker_mc || 'N/A',
+          accepted_rate: acceptance.accepted_rate,
+          approval_status: acceptance.approval_status,
+          accepted_at: acceptance.accepted_at,
+          approved_at: acceptance.approved_at,
+          accepted_by_phone: acceptance.accepted_by_phone,
+          accepted_by_mc_number: acceptance.accepted_by_mc_number,
+          source: 'direct',
+          origin: load?.origin,
+          destination: load?.destination,
+          pickup_location: load?.pickup_location,
+          delivery_location: load?.delivery_location,
+          pickup_date: load?.pickup_date,
+          delivery_date: load?.delivery_date,
+          weight: load?.weight,
+          distance: load?.distance,
+          equipment_type: load?.equipment_type || load?.equipment,
+          load_type: load?.load_type,
+          description: load?.description,
+          expedited: load?.expedited,
+          hazmat: load?.hazmat,
+          team_driver: load?.team_driver,
+        })
+      })
+    }
+
+    // Sort by date (most recent first)
+    bookedLoads.sort((a, b) => 
+      new Date(b.accepted_at).getTime() - new Date(a.accepted_at).getTime()
+    )
+    console.log(`✅ Returning ${bookedLoads.length} total booked loads`)
     
     return NextResponse.json(bookedLoads)
   } catch (error) {
-    console.error('Error in booked-loads API:', error)
+    console.error('❌ Error in booked-loads API:', error)
     return NextResponse.json(
       { error: 'Failed to fetch booked loads' },
       { status: 500 }

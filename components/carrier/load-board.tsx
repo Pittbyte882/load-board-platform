@@ -106,7 +106,41 @@ export function LoadBoard() {
       setIsLoading(false)
     }
   }
+  //handle search 
+const handleSearch = async () => {
+  setIsLoading(true)
+  try {
+    const response = await fetch('/api/loads/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin,
+        deadheadRadius,
+        destination: deliveryLocation,
+        deliveryRadius,
+        equipmentType,
+        loadType,
+        weightMin,
+        weightMax,
+        dateFrom,
+        dateTo,
+        sortBy
+      })
+    })
 
+    if (response.ok) {
+      const data = await response.json()
+      console.log('Search results:', data.count, 'loads')
+      setFilteredLoads(data.loads)
+    } else {
+      console.error('Search failed')
+    }
+  } catch (error) {
+    console.error('Error searching loads:', error)
+  } finally {
+    setIsLoading(false)
+  }
+}
   const filterAndSortLoads = () => {
     const filtered = loads.filter((load) => {
       // Origin filter with deadhead radius (simplified - in real app would use geolocation)
@@ -464,10 +498,10 @@ console.log('🔍 Full selectedLoad object:', selectedLoad)
             {/* Action Buttons */}
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="flex space-x-2">
-                <Button onClick={() => filterAndSortLoads()} className="bg-green-600 hover:bg-green-700">
-                  <Search className="h-4 w-4 mr-2" />
-                  Search Loads
-                </Button>
+                <Button onClick={handleSearch} className="bg-green-600 hover:bg-green-700">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search Loads
+                  </Button>
                 <Button
                   variant="outline"
                   onClick={() => {

@@ -118,55 +118,54 @@ export function MyLoads({ onNavigateToPostLoad }: MyLoadsProps) {
   }, [loads, searchTerm, statusFilter, sortBy])
 
   const fetchLoads = async () => {
-    if (!user?.id) {
+  if (!user?.id) {
     console.log("No user ID found")
     setIsLoading(false)
     return
   }
-    try {
-      console.log("Fetching broker loads...")
-      const response = await fetch(`/api/loads?brokerId=${user?.id}`, {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      })
+  try {
+    console.log("Fetching broker loads...")
+    const response = await fetch(`/api/loads?brokerId=${user?.id}`, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+      },
+    })
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Raw data from API:", data[0]) // Debug log
-        console.log("Total loads fetched:", data.length)
-        
-        // Transform database fields to match frontend expectations
-        const transformedData = data.map((load: any) => ({
-          ...load,
-          // Map database snake_case to frontend camelCase
-          postedDate: load.posted_date || load.created_at,
-          origin: load.pickup_location || load.origin,
-          destination: load.delivery_location || load.destination,
-          pickupDate: load.pickup_date,
-          deliveryDate: load.delivery_date,
-          loadType: load.load_type,
-          equipment: load.equipment_type || load.equipment,
-          brokerMcNumber: load.broker_mc_number || load.broker_mc || "MC-123456",
-          carrierName: load.carrier_name,
-          carrierId: load.carrier_id,
-          expedited: load.expedited || false,
-          hazmat: load.hazmat || false,
-        }))
-        
-        console.log("Transformed data:", transformedData[0]) // Debug log
-        setLoads(transformedData)
-      } else {
-        console.error("Failed to fetch loads:", response.status)
-      }
-    } catch (error) {
-      console.error("Error fetching loads:", error)
-    } finally {
-      setIsLoading(false)
+    if (response.ok) {
+      const data = await response.json()
+      console.log("Raw data from API:", data)
+      console.log("Total loads fetched:", data.loads?.length || 0)
+      
+      // Transform database fields to match frontend expectations
+      const transformedData = (data.loads || []).map((load: any) => ({
+        ...load,
+        // Map database snake_case to frontend camelCase
+        postedDate: load.posted_date || load.created_at,
+        origin: load.pickup_location || load.origin,
+        destination: load.delivery_location || load.destination,
+        pickupDate: load.pickup_date,
+        deliveryDate: load.delivery_date,
+        loadType: load.load_type,
+        equipment: load.equipment_type || load.equipment,
+        brokerMcNumber: load.broker_mc_number || load.broker_mc || "MC-123456",
+        carrierName: load.carrier_name,
+        carrierId: load.carrier_id,
+        expedited: load.expedited || false,
+        hazmat: load.hazmat || false,
+      }))
+      
+      console.log("Transformed data:", transformedData[0]) // Debug log
+      setLoads(transformedData)
+    } else {
+      console.error("Failed to fetch loads:", response.status)
     }
+  } catch (error) {
+    console.error("Error fetching loads:", error)
+  } finally {
+    setIsLoading(false)
   }
-
+}
   const filterAndSortLoads = () => {
     const filtered = loads.filter((load) => {
       const matchesSearch =

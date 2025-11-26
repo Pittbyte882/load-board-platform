@@ -25,7 +25,11 @@ export function BookedLoads() {
         
         if (response.ok) {
           const data = await response.json()
+          console.log('📦 Fetched booked loads:', data)
           setLoads(data.loads || [])
+        } else {
+          console.error('Failed to fetch booked loads:', response.status)
+          setLoads([])
         }
       } catch (error) {
         console.error('Error fetching booked loads:', error)
@@ -56,11 +60,13 @@ export function BookedLoads() {
   const filteredLoads = loads.filter(
     (load) =>
       load.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      load.origin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      load.destination?.toLowerCase().includes(searchTerm.toLowerCase()),
+      load.pickup_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      load.delivery_location?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const activeLoads = filteredLoads.filter((load) => load.status === "confirmed" || load.status === "in-transit")
+  const activeLoads = filteredLoads.filter((load) => 
+    load.bookingStatus === "confirmed" || load.status === "confirmed" || load.status === "in-transit"
+  )
   const completedLoads = filteredLoads.filter((load) => load.status === "delivered")
 
   return (
@@ -111,10 +117,87 @@ export function BookedLoads() {
             </Card>
           ) : (
             activeLoads.map((load) => (
-              <Card key={load.id} className="hover:shadow-md transition-shadow">
+              <Card key={load.bookingId} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
-                  {/* Your existing load card content */}
-                  {/* Keep the same structure but use dynamic data from 'load' object */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-start space-x-4">
+                      <div className="bg-blue-100 p-3 rounded-lg">
+                        <Package className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{load.id}</h3>
+                        <p className="text-sm text-gray-600">{load.description || 'Load Details'}</p>
+                        <div className="flex items-center mt-2 text-sm text-gray-500">
+                          <span>{load.brokerCompany}</span>
+                          <span className="mx-2">•</span>
+                          <Clock className="h-4 w-4 mr-1" />
+                          <span>{new Date(load.bookedAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600">
+                        ${(load.bookedRate || load.rate || 0).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        ${load.distance > 0 ? ((load.bookedRate || load.rate) / load.distance).toFixed(2) : '0.00'}/mile
+                      </div>
+                      <Badge className={getStatusColor(load.bookingStatus || load.status)}>
+                        {load.bookingStatus || load.status}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <div className="text-sm font-medium">Pickup</div>
+                        <div className="text-sm text-gray-600">{load.pickup_location}</div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(load.pickup_date).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <div className="text-sm font-medium">Delivery</div>
+                        <div className="text-sm text-gray-600">{load.delivery_location}</div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(load.delivery_date).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Package className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <div className="text-sm font-medium">{load.equipment_type}</div>
+                        <div className="text-sm text-gray-600">{load.weight?.toLocaleString() || 0} lbs</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t">
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <span>{load.distance} miles</span>
+                      {load.expedited && <Badge variant="destructive">Expedited</Badge>}
+                      {load.hazmat && <Badge variant="destructive">Hazmat</Badge>}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Contact
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Message
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))
@@ -141,9 +224,9 @@ export function BookedLoads() {
             </Card>
           ) : (
             completedLoads.map((load) => (
-              <Card key={load.id} className="hover:shadow-md transition-shadow">
+              <Card key={load.bookingId} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
-                  {/* Your existing completed load card content */}
+                  <div className="text-center">Completed Load: {load.id}</div>
                 </CardContent>
               </Card>
             ))
@@ -171,9 +254,9 @@ export function BookedLoads() {
             </Card>
           ) : (
             filteredLoads.map((load) => (
-              <Card key={load.id} className="hover:shadow-md transition-shadow">
+              <Card key={load.bookingId} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
-                  {/* Your existing all loads card content */}
+                  <div className="text-center">All Load: {load.id}</div>
                 </CardContent>
               </Card>
             ))

@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Package, DollarSign, TrendingUp, Calendar, Truck, Star  } from "lucide-react"
 import { LoadBoard } from "./load-board"
+import { CarrierNegotiations } from "./carrier-negotiations"
 import { CarrierProfile } from "./carrier-profile"
 import { BookedLoads } from "./booked-loads"
-//import { SubscriptionPlan } from "./subscription-plan"
 import { PostTruck } from "./post-truck"
 import { CarrierSupport } from "./carrier-support"
 import { CarrierMessages } from "./carrier-messages"
@@ -170,11 +170,12 @@ export function CarrierDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="find-loads">Find Loads</TabsTrigger>
           <TabsTrigger value="booked-loads">Booked Loads</TabsTrigger>
           <TabsTrigger value="post-truck">Post Truck</TabsTrigger>
+          <TabsTrigger value="negotiations">Negotiations</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -408,6 +409,10 @@ export function CarrierDashboard() {
 
         <TabsContent value="subscription">
           <SubscriptionCard userType="carrier" userId={user?.id} />
+        </TabsContent>
+
+        <TabsContent value="negotiations">
+        <CarrierNegotiations />
         </TabsContent>
       </Tabs>
     </div>

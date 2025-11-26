@@ -12,6 +12,7 @@ import { PostLoadForm } from "./post-load-form"
 import { BrokerProfile } from "./broker-profile"
 import { BrokerSettings } from "./broker-settings"
 import { BrokerMessages } from "./broker-messages"
+import { BrokerNegotiations } from "./broker-negotiations"
 import { AvailableTrucks } from "./available-trucks"
 import { BrokerSupport } from "./broker-support"
 import { SubscriptionCard } from "@/components/shared/subscription-card"
@@ -196,11 +197,13 @@ export function BrokerDashboard() {
           <TabsTrigger value="my-loads">My Loads</TabsTrigger>
           <TabsTrigger value="post-load">Post Load</TabsTrigger>
           <TabsTrigger value="available-trucks">Available Trucks</TabsTrigger>
+          <TabsTrigger value="negotiations">Negotiations</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          
         </TabsList>
 
          <TabsContent value="dashboard" className="space-y-6">
@@ -299,6 +302,10 @@ export function BrokerDashboard() {
 
         <TabsContent value="settings">
           <BrokerSettings />
+        </TabsContent>
+
+        <TabsContent value="negotiations">
+          <BrokerNegotiations />
         </TabsContent>
       </Tabs>
     </div>

@@ -27,6 +27,30 @@ export async function POST(request: NextRequest) {
         .eq('id', acceptance.load_id)
       
       if (loadError) throw loadError
+
+      // CREATE BOOKING RECORD - This is what was missing!
+      const bookingData = {
+        id: `BOOKING-${Date.now()}`,
+        load_id: acceptance.load_id,
+        carrier_id: acceptance.accepted_by_id,
+        carrier_name: acceptance.accepted_by_name,
+        carrier_company: acceptance.accepted_by_company,
+        carrier_role: acceptance.accepted_by_role,
+        broker_id: acceptance.broker_id,
+        broker_name: 'Broker', // You can get this from session/user data
+        broker_company: 'Broker Company', // You can get this from session/user data
+        booked_rate: acceptance.accepted_rate,
+        status: 'confirmed',
+        booked_at: new Date().toISOString()
+      }
+
+      const { error: bookingError } = await supabase
+        .from('load_bookings')
+        .insert([bookingData])
+
+      if (bookingError) throw bookingError
+
+      console.log('✅ Booking record created for approved acceptance')
       
       // Send approval message
       const { data: conversation } = await supabase
@@ -39,14 +63,14 @@ export async function POST(request: NextRequest) {
         await supabase.from('messages').insert({
           conversation_id: conversation.id,
           sender_id: brokerId,
-          sender_name: 'Broker', // You can pass actual broker name
+          sender_name: 'Broker',
           sender_role: 'broker',
           sender_company: 'Broker Company',
           receiver_id: acceptance.accepted_by_id,
           receiver_name: acceptance.accepted_by_name,
           receiver_role: acceptance.accepted_by_role,
           receiver_company: acceptance.accepted_by_company,
-          content: `Load acceptance approved! The load is now confirmed at $${acceptance.accepted_rate.toLocaleString()}.`,
+          content: `Load acceptance approved! The load is now confirmed at $${acceptance.accepted_rate.toLocaleString()}. Check your Booked Loads section.`,
           load_id: acceptance.load_id,
           read: false
         })
@@ -54,7 +78,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({ 
         success: true, 
-        message: 'Acceptance approved successfully'
+        message: 'Acceptance approved and booked successfully'
       })
     } else if (action === 'decline') {
       // Update acceptance to declined

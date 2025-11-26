@@ -10,6 +10,7 @@ import { Users, Package, Truck } from "lucide-react"
 import { ManageCarriers } from "./manage-carriers"
 import { DispatcherLoadBoard } from "./dispatcher-load-board"
 import { DispatcherMessages } from "./dispatcher-messages"
+import { DispatcherNegotiations } from "./dispatcher-negotiations"
 import { DispatcherProfile } from "./dispatcher-profile"
 import { SubscriptionCard } from "@/components/shared/subscription-card"
 import { DispatcherSupport } from "./dispatcher-support"
@@ -146,6 +147,7 @@ export function DispatcherDashboard() {
           <TabsTrigger value="booked-loads">Booked Loads</TabsTrigger>
           <TabsTrigger value="loads">Find Loads</TabsTrigger>
           <TabsTrigger value="post-truck">Post Truck</TabsTrigger>
+          <TabsTrigger value="negotiations">Negotiations</TabsTrigger> 
           <TabsTrigger value="route-planning">Route Planning</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -305,6 +307,10 @@ export function DispatcherDashboard() {
 
         <TabsContent value="post-truck">
           <PostTruck />
+        </TabsContent>
+
+        <TabsContent value="negotiations">
+          <DispatcherNegotiations />
         </TabsContent>
       </Tabs>
     </div>
